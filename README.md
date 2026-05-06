@@ -1,0 +1,44 @@
+# Acesso GPT
+
+Painel interno simples para consultar o ultimo codigo de acesso recebido no Gmail.
+
+## Como rodar localmente
+
+Instale as dependencias:
+
+```bash
+npm install
+```
+
+Crie um arquivo `.env` com base no `.env.example` e preencha suas credenciais.
+
+Inicie o servidor:
+
+```bash
+npm start
+```
+
+Acesse:
+
+```text
+http://localhost:3000
+```
+
+## Variaveis de ambiente
+
+```env
+APP_USER=
+APP_PASSWORD=
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+GOOGLE_REFRESH_TOKEN=
+```
+
+## Observacoes de seguranca
+
+Este projeto e um prototipo interno.
+
+- Nao envie o arquivo `.env` para o GitHub.
+- Nao coloque credenciais reais no frontend.
+- O token de login e mantido em memoria e nao deve ser usado como autenticacao final de producao.
+- O Gmail e acessado pelo backend usando OAuth.
