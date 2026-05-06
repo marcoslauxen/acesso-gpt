@@ -1,4 +1,10 @@
-function Alert({ type, message }) {
+import React from "react";
+interface AlertProps {
+  type: "error" | "success";
+  message: string;
+}
+
+function Alert({ type, message }: AlertProps) {
   if (!message) return null;
 
   const styles =
@@ -9,4 +15,4 @@ function Alert({ type, message }) {
   return <div className={"rounded-lg border px-4 py-3 text-sm " + styles}>{message}</div>;
 }
 
-window.Alert = Alert;
+export default Alert;

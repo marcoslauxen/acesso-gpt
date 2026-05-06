@@ -1,4 +1,4 @@
-function EyeIcon() {
+export function EyeIcon() {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -14,7 +14,7 @@ function EyeIcon() {
   );
 }
 
-function EyeOffIcon() {
+export function EyeOffIcon() {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -31,6 +31,3 @@ function EyeOffIcon() {
     </svg>
   );
 }
-
-window.EyeIcon = EyeIcon;
-window.EyeOffIcon = EyeOffIcon;

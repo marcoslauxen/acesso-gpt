@@ -1,24 +1,33 @@
-const { useState: useLoginState } = React;
+import React from "react";
+import { useState } from "react";
+import AppHeader from "../components/AppHeader";
+import Alert from "../components/Alert";
+import { EyeIcon, EyeOffIcon } from "../components/EyeIcons";
+import { APP_CONFIG } from "../constants/app";
+import { login } from "../services/api";
 
-function LoginScreen({ onLogin }) {
-  const [username, setUsername] = useLoginState("");
-  const [password, setPassword] = useLoginState("");
-  const [showPassword, setShowPassword] = useLoginState(false);
-  const [error, setError] = useLoginState("");
-  const [loading, setLoading] = useLoginState(false);
+interface LoginScreenProps {
+  onLogin: (token: string) => void;
+}
 
-  async function handleSubmit(event) {
+function LoginScreen({ onLogin }: LoginScreenProps) {
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
     setLoading(true);
 
     try {
-      const data = await window.api.login(username, password);
-
-      localStorage.setItem(window.APP_CONFIG.tokenKey, data.token);
+      const data = await login(username, password);
+      localStorage.setItem(APP_CONFIG.tokenKey, data.token);
       onLogin(data.token);
     } catch (err) {
-      setError(err.message);
+      setError(err instanceof Error ? err.message : "Falha no login.");
     } finally {
       setLoading(false);
     }
@@ -33,12 +42,12 @@ function LoginScreen({ onLogin }) {
           <Alert type="error" message={error} />
 
           <label className="block">
-            <span className="text-sm font-medium text-slate-700">Usuário</span>
+            <span className="text-sm font-medium text-slate-700">Usuario</span>
             <input
               className="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3 text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
               value={username}
               onChange={(event) => setUsername(event.target.value)}
-              placeholder="Digite seu usuário"
+              placeholder="Digite seu usuario"
               autoComplete="username"
               required
             />
@@ -81,4 +90,4 @@ function LoginScreen({ onLogin }) {
   );
 }
 
-window.LoginScreen = LoginScreen;
+export default LoginScreen;

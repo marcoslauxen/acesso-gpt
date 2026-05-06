@@ -1,12 +1,24 @@
-const { useEffect: useDashboardEffect, useState: useDashboardState } = React;
+import React from "react";
+import { useEffect, useState } from "react";
+import Alert from "../components/Alert";
+import AppHeader from "../components/AppHeader";
+import CodeCard from "../components/CodeCard";
+import Spinner from "../components/Spinner";
+import { APP_CONFIG } from "../constants/app";
+import { fetchEmailCode, type CodeData } from "../services/api";
 
-function Dashboard({ token, onLogout }) {
-  const [codeData, setCodeData] = useDashboardState(null);
-  const [message, setMessage] = useDashboardState("");
-  const [messageType, setMessageType] = useDashboardState("success");
-  const [loading, setLoading] = useDashboardState(false);
+interface DashboardProps {
+  token: string;
+  onLogout: () => void;
+}
 
-  function showMessage(type, text) {
+function Dashboard({ token, onLogout }: DashboardProps) {
+  const [codeData, setCodeData] = useState<CodeData | null>(null);
+  const [message, setMessage] = useState("");
+  const [messageType, setMessageType] = useState<"error" | "success">("success");
+  const [loading, setLoading] = useState(false);
+
+  function showMessage(type: "error" | "success", text: string) {
     setMessageType(type);
     setMessage(text);
   }
@@ -16,23 +28,22 @@ function Dashboard({ token, onLogout }) {
     setMessage("");
 
     try {
-      const data = await window.api.fetchEmailCode(token);
-
+      const data = await fetchEmailCode(token);
       setCodeData(data.code ? data : null);
       showMessage("success", data.message || "Codigo do Gmail encontrado com sucesso.");
     } catch (err) {
-      showMessage("error", err.message);
+      showMessage("error", err instanceof Error ? err.message : "Falha ao buscar codigo.");
     } finally {
       setLoading(false);
     }
   }
 
   function logout() {
-    localStorage.removeItem(window.APP_CONFIG.tokenKey);
+    localStorage.removeItem(APP_CONFIG.tokenKey);
     onLogout();
   }
 
-  useDashboardEffect(() => {
+  useEffect(() => {
     handleFetchEmailCode();
   }, []);
 
@@ -69,4 +80,4 @@ function Dashboard({ token, onLogout }) {
   );
 }
 
-window.Dashboard = Dashboard;
+export default Dashboard;

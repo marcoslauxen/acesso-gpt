@@ -265,5 +265,5 @@ app.use((req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Acesso GPT rodando em http://localhost:${PORT}`);
+  console.log(`Acesso OpenAI rodando em http://localhost:${PORT}`);
 });
