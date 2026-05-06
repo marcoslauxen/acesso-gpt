@@ -24,6 +24,17 @@ Acesse:
 http://localhost:3000
 ```
 
+## Publicacao
+
+Em plataformas como Render ou Railway, configure:
+
+```text
+Build Command: npm install
+Start Command: npm start
+```
+
+Depois cadastre as mesmas variaveis de ambiente do `.env.example` no painel da hospedagem.
+
 ## Variaveis de ambiente
 
 ```env

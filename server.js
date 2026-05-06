@@ -4,7 +4,7 @@ const fs = require("fs");
 const path = require("path");
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 // Este projeto e apenas um prototipo interno.
 // Nao use este modelo de autenticacao/token em producao.
