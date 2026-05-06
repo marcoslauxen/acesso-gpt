@@ -7,7 +7,12 @@ Painel interno simples para consultar o ultimo codigo de acesso recebido no Gmai
 ```text
 backend/server.js    API em Node.js + Express
 frontend/index.html  Pagina principal
-frontend/app.jsx     Aplicacao React
+frontend/app.jsx     Componente principal React
+frontend/main.jsx    Renderizacao do React
+frontend/components  Componentes reutilizaveis
+frontend/screens     Telas da aplicacao
+frontend/services    Chamadas para a API
+frontend/constants   Configuracoes de exibicao
 server.js            Entrada usada pelo npm start/Render
 ```
 
