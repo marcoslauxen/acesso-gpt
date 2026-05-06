@@ -2,6 +2,15 @@
 
 Painel interno simples para consultar o ultimo codigo de acesso recebido no Gmail.
 
+## Estrutura
+
+```text
+backend/server.js    API em Node.js + Express
+frontend/index.html  Pagina principal
+frontend/app.jsx     Aplicacao React
+server.js            Entrada usada pelo npm start/Render
+```
+
 ## Como rodar localmente
 
 Instale as dependencias:
