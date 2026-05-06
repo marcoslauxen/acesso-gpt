@@ -3,6 +3,7 @@ const { useState: useLoginState } = React;
 function LoginScreen({ onLogin }) {
   const [username, setUsername] = useLoginState("");
   const [password, setPassword] = useLoginState("");
+  const [showPassword, setShowPassword] = useLoginState(false);
   const [error, setError] = useLoginState("");
   const [loading, setLoading] = useLoginState(false);
 
@@ -45,15 +46,26 @@ function LoginScreen({ onLogin }) {
 
           <label className="block">
             <span className="text-sm font-medium text-slate-700">Senha</span>
-            <input
-              className="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3 text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
-              type="password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              placeholder="Digite sua senha"
-              autoComplete="current-password"
-              required
-            />
+            <div className="relative mt-2">
+              <input
+                className="w-full rounded-lg border border-slate-300 px-4 py-3 pr-12 text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                placeholder="Digite sua senha"
+                autoComplete="current-password"
+                required
+              />
+              <button
+                type="button"
+                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-2 text-slate-500 transition"
+                onClick={() => setShowPassword((value) => !value)}
+                aria-label={showPassword ? "Ocultar senha" : "Exibir senha"}
+                title={showPassword ? "Ocultar senha" : "Exibir senha"}
+              >
+                {showPassword ? <EyeOffIcon /> : <EyeIcon />}
+              </button>
+            </div>
           </label>
 
           <button
