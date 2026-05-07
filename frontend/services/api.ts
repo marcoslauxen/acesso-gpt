@@ -9,11 +9,21 @@ export interface CodeData {
   message?: string;
 }
 
+export class ApiError extends Error {
+  status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+  }
+}
+
 async function parseResponse<T>(response: Response, fallbackMessage: string): Promise<T> {
   const data = await response.json();
 
   if (!response.ok) {
-    throw new Error(data.message || fallbackMessage);
+    throw new ApiError(data.message || fallbackMessage, response.status);
   }
 
   return data as T;

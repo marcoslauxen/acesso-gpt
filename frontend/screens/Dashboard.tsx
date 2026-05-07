@@ -5,7 +5,7 @@ import AppHeader from "../components/AppHeader";
 import CodeCard from "../components/CodeCard";
 import Spinner from "../components/Spinner";
 import { APP_CONFIG } from "../constants/app";
-import { fetchEmailCode, type CodeData } from "../services/api";
+import { ApiError, fetchEmailCode, type CodeData } from "../services/api";
 
 interface DashboardProps {
   token: string;
@@ -32,6 +32,11 @@ function Dashboard({ token, onLogout }: DashboardProps) {
       setCodeData(data.code ? data : null);
       showMessage("success", data.message || "Codigo do Gmail encontrado com sucesso.");
     } catch (err) {
+      if (err instanceof ApiError && err.status === 401) {
+        logout();
+        return;
+      }
+
       showMessage("error", err instanceof Error ? err.message : "Falha ao buscar codigo.");
     } finally {
       setLoading(false);
