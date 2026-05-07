@@ -269,6 +269,10 @@ app.use((req, res) => {
     return res.status(404).json({ message: "Rota da API nao encontrada." });
   }
 
+  if (path.extname(req.path)) {
+    return res.status(404).send("Arquivo nao encontrado.");
+  }
+
   res.sendFile(path.join(FRONTEND_PATH, "index.html"));
 });
 
