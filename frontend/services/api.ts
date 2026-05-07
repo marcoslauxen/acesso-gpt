@@ -39,6 +39,15 @@ export async function login(username: string, password: string): Promise<LoginRe
   return parseResponse<LoginResponse>(response, "Nao foi possivel entrar.");
 }
 
+export async function logout(token: string): Promise<{ message?: string }> {
+  const response = await fetch("/api/logout", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  return parseResponse<{ message?: string }>(response, "Nao foi possivel sair.");
+}
+
 export async function fetchEmailCode(token: string): Promise<CodeData> {
   const response = await fetch("/api/code/email", {
     headers: { Authorization: `Bearer ${token}` },

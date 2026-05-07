@@ -5,7 +5,7 @@ import AppHeader from "../components/AppHeader";
 import CodeCard from "../components/CodeCard";
 import Spinner from "../components/Spinner";
 import { APP_CONFIG } from "../constants/app";
-import { ApiError, fetchEmailCode, type CodeData } from "../services/api";
+import { ApiError, fetchEmailCode, logout as requestLogout, type CodeData } from "../services/api";
 
 interface DashboardProps {
   token: string;
@@ -48,6 +48,18 @@ function Dashboard({ token, onLogout }: DashboardProps) {
     onLogout();
   }
 
+  async function handleLogout() {
+    try {
+      await requestLogout(token);
+    } catch (err) {
+      if (!(err instanceof ApiError && err.status === 401)) {
+        console.warn("Nao foi possivel invalidar o token no backend.", err);
+      }
+    } finally {
+      logout();
+    }
+  }
+
   useEffect(() => {
     handleFetchEmailCode();
   }, []);
@@ -74,7 +86,7 @@ function Dashboard({ token, onLogout }: DashboardProps) {
             </button>
             <button
               className="rounded-lg bg-slate-900 px-4 py-3 font-semibold text-white transition hover:bg-slate-800"
-              onClick={logout}
+              onClick={handleLogout}
             >
               Sair
             </button>

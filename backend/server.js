@@ -208,6 +208,14 @@ app.post("/api/login", (req, res) => {
   });
 });
 
+app.post("/api/logout", authMiddleware, (req, res) => {
+  validToken = null;
+
+  return res.json({
+    message: "Logout realizado com sucesso.",
+  });
+});
+
 app.get("/api/code", authMiddleware, (req, res) => {
   if (!lastCode) {
     return res.json({
