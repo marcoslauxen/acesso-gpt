@@ -54,9 +54,9 @@ app.use(express.static(FRONTEND_PATH));
 const APP_USER = process.env.APP_USER;
 const APP_PASSWORD = process.env.APP_PASSWORD;
 
-// Token simples mantido em memoria para testes.
+// Tokens simples mantidos em memoria para testes.
 // Em producao, use uma estrategia segura de autenticacao.
-let validToken = null;
+const activeTokens = new Set();
 
 // Ultimo codigo recebido, tambem salvo apenas em memoria.
 // Ao reiniciar o servidor, esse valor sera perdido.
@@ -80,10 +80,11 @@ function authMiddleware(req, res, next) {
 
   const token = authHeader.replace("Bearer ", "");
 
-  if (!validToken || token !== validToken) {
+  if (!activeTokens.has(token)) {
     return res.status(401).json({ message: "Token invalido ou expirado." });
   }
 
+  req.token = token;
   next();
 }
 
@@ -200,16 +201,17 @@ app.post("/api/login", (req, res) => {
     return res.status(401).json({ message: "Usuario ou senha invalidos." });
   }
 
-  validToken = createToken();
+  const token = createToken();
+  activeTokens.add(token);
 
   return res.json({
-    token: validToken,
+    token,
     message: "Login realizado com sucesso.",
   });
 });
 
 app.post("/api/logout", authMiddleware, (req, res) => {
-  validToken = null;
+  activeTokens.delete(req.token);
 
   return res.json({
     message: "Logout realizado com sucesso.",
