@@ -9,10 +9,10 @@ function Alert({ type, message }: AlertProps) {
 
   const styles =
     type === "error"
-      ? "border-red-200 bg-red-50 text-red-700"
-      : "border-emerald-200 bg-emerald-50 text-emerald-700";
+      ? "border-red-200 bg-red-50 text-red-800"
+      : "border-emerald-200 bg-emerald-50 text-emerald-800";
 
-  return <div className={"rounded-lg border px-4 py-3 text-sm " + styles}>{message}</div>;
+  return <div className={"rounded-xl border px-4 py-3 text-sm font-medium " + styles}>{message}</div>;
 }
 
 export default Alert;

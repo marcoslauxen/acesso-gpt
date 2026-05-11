@@ -5,10 +5,24 @@ function AppHeader() {
   const { appName, title, description } = APP_CONFIG;
 
   return (
-    <div className="text-center">
-      <p className="text-sm font-semibold uppercase tracking-wide text-blue-700">{appName}</p>
-      <h1 className="mt-2 text-3xl font-bold text-slate-900 sm:text-4xl">{title}</h1>
-      <p className="mt-3 text-base text-slate-600">{description}</p>
+    <div>
+      <div className="flex items-center gap-3">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white shadow-lg shadow-slate-900/10 ring-1 ring-slate-200/80">
+          <img
+            src="/assets/app-logo.png"
+            alt=""
+            width={48}
+            height={48}
+            className="h-full w-full object-cover"
+            decoding="async"
+          />
+        </div>
+        <div>
+          <p className="text-sm font-semibold uppercase text-cyan-700">{appName}</p>
+          <h1 className="text-2xl font-bold text-slate-950 sm:text-3xl">{title}</h1>
+        </div>
+      </div>
+      <p className="mt-4 max-w-xl text-sm leading-6 text-slate-600 sm:text-base">{description}</p>
     </div>
   );
 }

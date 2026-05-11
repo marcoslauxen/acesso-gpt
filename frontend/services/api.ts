@@ -9,6 +9,16 @@ export interface CodeData {
   message?: string;
 }
 
+export interface CodeHistoryEntry {
+  code: string;
+  receivedAt: string;
+}
+
+export interface EmailCodeHistoryResponse {
+  codes: CodeHistoryEntry[];
+  message?: string;
+}
+
 export class ApiError extends Error {
   status: number;
 
@@ -54,4 +64,15 @@ export async function fetchEmailCode(token: string): Promise<CodeData> {
   });
 
   return parseResponse<CodeData>(response, "Nao foi possivel buscar o codigo no Gmail.");
+}
+
+export async function fetchEmailCodeHistory(token: string): Promise<EmailCodeHistoryResponse> {
+  const response = await fetch("/api/code/email/history", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  return parseResponse<EmailCodeHistoryResponse>(
+    response,
+    "Nao foi possivel carregar o historico do Gmail."
+  );
 }

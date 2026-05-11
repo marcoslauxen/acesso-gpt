@@ -163,29 +163,52 @@ function extractReceivedAt(headers = []) {
   return Number.isNaN(parsedDate.getTime()) ? new Date().toISOString() : parsedDate.toISOString();
 }
 
-async function findLatestGmailCode() {
+async function collectGmailCodes(maxCodes = 10) {
   const accessToken = await getGmailAccessToken();
-  const query = encodeURIComponent(`from:${GMAIL_SENDER} newer_than:30d`);
-  const list = await gmailRequest(`messages?q=${query}&maxResults=10`, accessToken);
+  const query = encodeURIComponent(`from:${GMAIL_SENDER}`);
+  const listMax = Math.min(100, Math.max(maxCodes * 10, 20));
+  const list = await gmailRequest(`messages?q=${query}&maxResults=${listMax}`, accessToken);
 
   if (!list.messages || list.messages.length === 0) {
-    return null;
+    return [];
   }
 
+  const results = [];
+  const seen = new Set();
+
   for (const message of list.messages) {
+    if (results.length >= maxCodes) {
+      break;
+    }
+
     const details = await gmailRequest(`messages/${message.id}?format=full`, accessToken);
     const text = `${details.snippet || ""}\n${extractMessageText(details.payload)}`;
     const codeMatch = text.match(/\b\d{6}\b/);
 
-    if (codeMatch) {
-      return {
-        code: codeMatch[0],
-        receivedAt: extractReceivedAt(details.payload?.headers),
-      };
+    if (!codeMatch) {
+      continue;
     }
+
+    const receivedAt = extractReceivedAt(details.payload?.headers);
+    const key = `${codeMatch[0]}|${receivedAt}`;
+
+    if (seen.has(key)) {
+      continue;
+    }
+
+    seen.add(key);
+    results.push({
+      code: codeMatch[0],
+      receivedAt,
+    });
   }
 
-  return null;
+  return results;
+}
+
+async function findLatestGmailCode() {
+  const codes = await collectGmailCodes(1);
+  return codes[0] || null;
 }
 
 app.post("/api/login", (req, res) => {
@@ -258,6 +281,28 @@ app.get("/api/code/email", authMiddleware, async (req, res) => {
     return res.json({
       ...lastCode,
       message: `Codigo encontrado no Gmail ${GMAIL_RECEIVER}.`,
+    });
+  } catch (err) {
+    return res.status(503).json({
+      message: err.message,
+    });
+  }
+});
+
+app.get("/api/code/email/history", authMiddleware, async (req, res) => {
+  try {
+    const codes = await collectGmailCodes(10);
+
+    if (codes.length === 0) {
+      return res.json({
+        codes: [],
+        message: `Nenhum codigo foi encontrado em e-mails recentes de ${GMAIL_SENDER}.`,
+      });
+    }
+
+    return res.json({
+      codes,
+      message: `Historico do Gmail (${GMAIL_RECEIVER}).`,
     });
   } catch (err) {
     return res.status(503).json({
