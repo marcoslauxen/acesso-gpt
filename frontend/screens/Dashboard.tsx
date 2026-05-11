@@ -117,6 +117,29 @@ function Dashboard({ token, onLogout }: DashboardProps) {
     return () => document.removeEventListener("keydown", onKey);
   }, [historyOpen]);
 
+  useEffect(() => {
+    if (!historyOpen) {
+      return;
+    }
+    const html = document.documentElement;
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousHtmlOverflow = html.style.overflow;
+    const previousPaddingRight = document.body.style.paddingRight;
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+
+    document.body.style.overflow = "hidden";
+    html.style.overflow = "hidden";
+    if (scrollbarWidth > 0) {
+      document.body.style.paddingRight = `${scrollbarWidth}px`;
+    }
+
+    return () => {
+      document.body.style.overflow = previousBodyOverflow;
+      html.style.overflow = previousHtmlOverflow;
+      document.body.style.paddingRight = previousPaddingRight;
+    };
+  }, [historyOpen]);
+
   function openHistoryModal() {
     setHistoryOpen(true);
     setHistoryLoading(true);
