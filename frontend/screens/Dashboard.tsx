@@ -70,7 +70,10 @@ function Dashboard({ token, onLogout }: DashboardProps) {
       const data = await fetchEmailCode(token);
       setCodeData(data.code ? data : null);
       await loadHistory();
-      showMessage("success", data.message || "Codigo do Gmail encontrado com sucesso.");
+      showMessage(
+        data.code ? "success" : "error",
+        data.message || (data.code ? "Codigo do Gmail encontrado com sucesso." : "Nenhum codigo foi encontrado no Gmail.")
+      );
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) {
         logout();
