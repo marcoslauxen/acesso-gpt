@@ -3,6 +3,39 @@ export interface LoginResponse {
   message?: string;
 }
 
+export interface AppUser {
+  id: string;
+  name: string;
+}
+
+export type RequestStatus = "waiting" | "processing" | "sent" | "expired" | "canceled" | "failed";
+
+export interface CodeRequest {
+  id: string;
+  userId: string;
+  userName: string;
+  status?: RequestStatus;
+  requestedAt: string;
+  expiresAt: string;
+  completedAt?: string | null;
+}
+
+export interface UsersResponse {
+  users: AppUser[];
+}
+
+export interface RequestResponse {
+  request: CodeRequest | null;
+  message?: string;
+}
+
+export interface CreateUserInput {
+  name: string;
+  email: string;
+  username: string;
+  password: string;
+}
+
 export interface CodeData {
   code?: string;
   receivedAt?: string;
@@ -75,4 +108,42 @@ export async function fetchEmailCodeHistory(token: string): Promise<EmailCodeHis
     response,
     "Nao foi possivel carregar o historico do Gmail."
   );
+}
+
+export async function fetchUsers(): Promise<UsersResponse> {
+  const response = await fetch("/api/users");
+  return parseResponse<UsersResponse>(response, "Nao foi possivel carregar os usuarios.");
+}
+
+export async function createUser(input: CreateUserInput): Promise<{ user: AppUser; message?: string }> {
+  const response = await fetch("/api/users", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+
+  return parseResponse<{ user: AppUser; message?: string }>(
+    response,
+    "Nao foi possivel cadastrar o usuario."
+  );
+}
+
+export async function fetchCurrentRequest(): Promise<RequestResponse> {
+  const response = await fetch("/api/requests/current");
+  return parseResponse<RequestResponse>(response, "Nao foi possivel consultar a vez atual.");
+}
+
+export async function createCodeRequest(userId: string): Promise<RequestResponse> {
+  const response = await fetch("/api/requests", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ userId }),
+  });
+
+  return parseResponse<RequestResponse>(response, "Nao foi possivel solicitar o codigo.");
+}
+
+export async function fetchRequest(requestId: string): Promise<RequestResponse> {
+  const response = await fetch(`/api/requests/${encodeURIComponent(requestId)}`);
+  return parseResponse<RequestResponse>(response, "Nao foi possivel acompanhar a solicitacao.");
 }
