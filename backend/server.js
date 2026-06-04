@@ -21,7 +21,15 @@ const {
   getMissingGmailEnvVars,
 } = require("./services/gmail");
 const { createRequestObserver } = require("./services/request-observer");
-const { createUser, listActiveUsers, validateUserInput } = require("./services/users");
+const {
+  createUser,
+  getUserAvatar,
+  listActiveUsers,
+  listAdminUsers,
+  parseAvatarDataUrl,
+  updateUser,
+  validateUserInput,
+} = require("./services/users");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -30,7 +38,7 @@ const FRONTEND_PATH = path.join(__dirname, "..", "frontend");
 // Este projeto e apenas um prototipo interno.
 // Nao use este modelo de autenticacao/token em producao.
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: "1mb" }));
 app.use(express.static(FRONTEND_PATH));
 
 // Credenciais do painel carregadas do arquivo .env.
@@ -112,8 +120,31 @@ app.get("/api/users", async (req, res, next) => {
   }
 });
 
+app.get("/api/users/:userId/avatar", async (req, res, next) => {
+  if (!/^\d+$/.test(req.params.userId)) {
+    return res.status(404).send("Foto nao encontrada.");
+  }
+
+  try {
+    const avatar = await getUserAvatar(req.params.userId);
+
+    if (!avatar) {
+      return res.status(404).send("Foto nao encontrada.");
+    }
+
+    res.set({
+      "Cache-Control": "public, max-age=300",
+      "Content-Type": avatar.mime,
+      "X-Content-Type-Options": "nosniff",
+    });
+    return res.send(avatar.data);
+  } catch (err) {
+    return next(err);
+  }
+});
+
 app.post("/api/users", async (req, res, next) => {
-  const { name, email, username, password } = req.body;
+  const { name, email, avatarDataUrl, username, password } = req.body;
 
   if (!adminCredentialsAreValid(username, password)) {
     return res.status(401).json({
@@ -127,11 +158,79 @@ app.post("/api/users", async (req, res, next) => {
     return res.status(400).json({ message: validatedUser.error });
   }
 
+  const avatar = parseAvatarDataUrl(avatarDataUrl);
+
+  if (avatar?.error) {
+    return res.status(400).json({ message: avatar.error });
+  }
+
   try {
-    const user = await createUser(validatedUser.name, validatedUser.email);
+    const user = await createUser(validatedUser.name, validatedUser.email, avatar);
     return res.status(201).json({
       user,
       message: `${user.name} foi cadastrado com sucesso.`,
+    });
+  } catch (err) {
+    if (err.code === "23505") {
+      return res.status(409).json({
+        message: "Ja existe um usuario cadastrado com esse nome ou e-mail.",
+      });
+    }
+
+    return next(err);
+  }
+});
+
+app.get("/api/admin/users", authMiddleware, async (req, res, next) => {
+  try {
+    const users = await listAdminUsers();
+    return res.json({ users });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+app.put("/api/admin/users/:userId", authMiddleware, async (req, res, next) => {
+  if (!/^\d+$/.test(req.params.userId)) {
+    return res.status(400).json({ message: "Usuario invalido." });
+  }
+
+  const { name, email, avatarDataUrl, removeAvatar } = req.body;
+  const validatedUser = validateUserInput(name, email);
+
+  if (validatedUser.error) {
+    return res.status(400).json({ message: validatedUser.error });
+  }
+
+  let avatarAction = null;
+
+  if (removeAvatar === true) {
+    avatarAction = { type: "remove" };
+  } else if (avatarDataUrl) {
+    const avatar = parseAvatarDataUrl(avatarDataUrl);
+
+    if (avatar?.error) {
+      return res.status(400).json({ message: avatar.error });
+    }
+
+    avatarAction = { type: "replace", avatar };
+  }
+
+  try {
+    const user = await updateUser(
+      req.params.userId,
+      validatedUser.name,
+      validatedUser.email,
+      avatarAction
+    );
+
+    if (!user) {
+      return res.status(404).json({ message: "Usuario nao encontrado." });
+    }
+
+    return res.json({
+      user,
+      message: `${user.name} foi atualizado com sucesso.`,
     });
   } catch (err) {
     if (err.code === "23505") {

@@ -66,7 +66,7 @@ Use `DATABASE_SSL=true` quando o provedor do PostgreSQL exigir SSL.
 
 As migrations criam estas tabelas:
 
-- `app_users`: nomes e e-mails cadastrados.
+- `app_users`: nomes, e-mails e fotos opcionais dos usuarios.
 - `code_requests`: solicitacoes, expiracao e controle da vez exclusiva.
 - `delivery_history`: resultado dos envios, sem armazenar o codigo.
 
@@ -93,6 +93,9 @@ npm run gmail:check
 
 - `GET /api/users`: lista nomes ativos sem expor e-mails.
 - `POST /api/users`: cadastra nome e e-mail mediante confirmacao administrativa.
+- `GET /api/users/:userId/avatar`: entrega a foto publica do usuario, quando existir.
+- `GET /api/admin/users`: lista dados completos usando token administrativo.
+- `PUT /api/admin/users/:userId`: altera nome, e-mail e foto usando token administrativo.
 - `GET /api/requests/current`: informa quem esta aguardando.
 - `POST /api/requests`: reserva a vez exclusiva por cinco minutos.
 - `GET /api/requests/:requestId`: informa o resultado de uma solicitacao.

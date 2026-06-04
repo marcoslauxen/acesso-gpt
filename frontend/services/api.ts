@@ -6,6 +6,14 @@ export interface LoginResponse {
 export interface AppUser {
   id: string;
   name: string;
+  avatarUrl?: string | null;
+}
+
+export interface AdminUser extends AppUser {
+  email: string;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export type RequestStatus = "waiting" | "processing" | "sent" | "expired" | "canceled" | "failed";
@@ -32,8 +40,16 @@ export interface RequestResponse {
 export interface CreateUserInput {
   name: string;
   email: string;
+  avatarDataUrl?: string;
   username: string;
   password: string;
+}
+
+export interface UpdateUserInput {
+  name: string;
+  email: string;
+  avatarDataUrl?: string;
+  removeAvatar?: boolean;
 }
 
 export interface CodeData {
@@ -113,6 +129,37 @@ export async function fetchEmailCodeHistory(token: string): Promise<EmailCodeHis
 export async function fetchUsers(): Promise<UsersResponse> {
   const response = await fetch("/api/users");
   return parseResponse<UsersResponse>(response, "Nao foi possivel carregar os usuarios.");
+}
+
+export async function fetchAdminUsers(token: string): Promise<{ users: AdminUser[] }> {
+  const response = await fetch("/api/admin/users", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  return parseResponse<{ users: AdminUser[] }>(
+    response,
+    "Nao foi possivel carregar os dados dos usuarios."
+  );
+}
+
+export async function updateAdminUser(
+  token: string,
+  userId: string,
+  input: UpdateUserInput
+): Promise<{ user: AdminUser; message?: string }> {
+  const response = await fetch(`/api/admin/users/${encodeURIComponent(userId)}`, {
+    method: "PUT",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(input),
+  });
+
+  return parseResponse<{ user: AdminUser; message?: string }>(
+    response,
+    "Nao foi possivel atualizar o usuario."
+  );
 }
 
 export async function createUser(input: CreateUserInput): Promise<{ user: AppUser; message?: string }> {

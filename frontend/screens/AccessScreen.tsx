@@ -9,13 +9,19 @@ import {
   ApiError,
   createCodeRequest,
   createUser,
+  fetchAdminUsers,
   fetchCurrentRequest,
   fetchRequest,
   fetchUsers,
+  login as adminLogin,
+  logout as adminLogout,
+  updateAdminUser,
+  type AdminUser,
   type AppUser,
   type CodeRequest,
   type RequestStatus,
 } from "../services/api";
+import { prepareAvatar } from "../utils/avatar";
 
 type MessageType = "error" | "success" | "info";
 
@@ -26,6 +32,25 @@ function getInitials(name: string) {
     .map((part) => part[0])
     .join("")
     .toUpperCase();
+}
+
+interface AvatarProps {
+  name: string;
+  avatarUrl?: string | null;
+  selected?: boolean;
+  className?: string;
+}
+
+function Avatar({ name, avatarUrl, selected = false, className = "h-11 w-11" }: AvatarProps) {
+  const styles = `${className} flex shrink-0 items-center justify-center overflow-hidden rounded-xl text-sm font-black ${
+    selected ? "bg-cyan-700 text-white" : "bg-slate-100 text-slate-700"
+  }`;
+
+  if (avatarUrl) {
+    return <img className={`${styles} object-cover`} src={avatarUrl} alt={`Foto de ${name}`} />;
+  }
+
+  return <span className={styles}>{getInitials(name)}</span>;
 }
 
 function formatRemaining(expiresAt?: string, now = Date.now()) {
@@ -66,6 +91,7 @@ function AccessScreen() {
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState<MessageType>("info");
   const [registerOpen, setRegisterOpen] = useState(false);
+  const [manageOpen, setManageOpen] = useState(false);
 
   const selectedUser = users.find((user) => user.id === selectedUserId) || null;
   const filteredUsers = useMemo(() => {
@@ -156,6 +182,15 @@ function AccessScreen() {
     showMessage("success", text);
   }
 
+  function handleUpdated(user: AppUser, text: string) {
+    setUsers((current) =>
+      current
+        .map((item) => (item.id === user.id ? user : item))
+        .sort((left, right) => left.name.localeCompare(right.name, "pt-BR"))
+    );
+    showMessage("success", text);
+  }
+
   useEffect(() => {
     void loadPage();
   }, []);
@@ -186,13 +221,22 @@ function AccessScreen() {
       <section className="mx-auto w-full max-w-6xl">
         <header className="flex flex-col gap-5 rounded-3xl border border-white/80 bg-white/75 p-5 shadow-xl shadow-slate-300/40 backdrop-blur sm:p-7 lg:flex-row lg:items-center lg:justify-between">
           <AppHeader />
-          <button
-            type="button"
-            className="shrink-0 rounded-xl border border-cyan-200 bg-cyan-50 px-5 py-3 text-sm font-bold text-cyan-900 transition hover:border-cyan-400 hover:bg-cyan-100"
-            onClick={() => setRegisterOpen(true)}
-          >
-            Cadastrar pessoa
-          </button>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <button
+              type="button"
+              className="shrink-0 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-700 transition hover:border-cyan-300 hover:text-cyan-800"
+              onClick={() => setManageOpen(true)}
+            >
+              Gerenciar pessoas
+            </button>
+            <button
+              type="button"
+              className="shrink-0 rounded-xl border border-cyan-200 bg-cyan-50 px-5 py-3 text-sm font-bold text-cyan-900 transition hover:border-cyan-400 hover:bg-cyan-100"
+              onClick={() => setRegisterOpen(true)}
+            >
+              Cadastrar pessoa
+            </button>
+          </div>
         </header>
 
         <div className="mt-5 grid gap-5 lg:grid-cols-[1fr_340px]">
@@ -253,9 +297,7 @@ function AccessScreen() {
                         }`}
                         onClick={() => setSelectedUserId(user.id)}
                       >
-                        <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-sm font-black ${selected ? "bg-cyan-700 text-white" : "bg-slate-100 text-slate-700"}`}>
-                          {getInitials(user.name)}
-                        </span>
+                        <Avatar name={user.name} avatarUrl={user.avatarUrl} selected={selected} />
                         <span className="min-w-0">
                           <span className="block truncate font-bold text-slate-950">{user.name}</span>
                           <span className={`mt-1 block text-xs font-semibold ${waiting ? "text-amber-700" : "text-slate-400"}`}>
@@ -346,6 +388,12 @@ function AccessScreen() {
           onRegistered={handleRegistered}
         />
       )}
+      {manageOpen && (
+        <ManageUsersModal
+          onClose={() => setManageOpen(false)}
+          onUpdated={handleUpdated}
+        />
+      )}
     </main>
   );
 }
@@ -358,11 +406,23 @@ interface RegisterModalProps {
 function RegisterModal({ onClose, onRegistered }: RegisterModalProps) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [avatarDataUrl, setAvatarDataUrl] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  async function handleAvatarFile(file?: File) {
+    if (!file) return;
+
+    try {
+      setError("");
+      setAvatarDataUrl(await prepareAvatar(file));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Nao foi possivel preparar a foto.");
+    }
+  }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -370,7 +430,7 @@ function RegisterModal({ onClose, onRegistered }: RegisterModalProps) {
     setLoading(true);
 
     try {
-      const data = await createUser({ name, email, username, password });
+      const data = await createUser({ name, email, avatarDataUrl: avatarDataUrl || undefined, username, password });
       onRegistered(data.user, data.message || `${data.user.name} foi cadastrado com sucesso.`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Nao foi possivel cadastrar.");
@@ -401,6 +461,19 @@ function RegisterModal({ onClose, onRegistered }: RegisterModalProps) {
 
         <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
           <Alert type="error" message={error} />
+          <div className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <Avatar name={name || "Nova pessoa"} avatarUrl={avatarDataUrl} className="h-16 w-16" />
+            <div className="min-w-0 flex-1">
+              <label className="inline-flex cursor-pointer rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 transition hover:border-cyan-400 hover:text-cyan-800">
+                Escolher foto
+                <input className="sr-only" type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => void handleAvatarFile(event.target.files?.[0])} />
+              </label>
+              <p className="mt-2 text-xs text-slate-500">Opcional. JPG, PNG ou WebP.</p>
+            </div>
+            {avatarDataUrl && (
+              <button type="button" className="text-xs font-bold text-red-600 hover:text-red-800" onClick={() => setAvatarDataUrl("")}>Remover</button>
+            )}
+          </div>
           <label className="block">
             <span className="text-sm font-bold text-slate-700">Nome</span>
             <input className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100" value={name} onChange={(event) => setName(event.target.value)} placeholder="Nome que aparecerá na lista" autoComplete="name" required />
@@ -435,6 +508,202 @@ function RegisterModal({ onClose, onRegistered }: RegisterModalProps) {
             {loading ? "Salvando..." : "Salvar cadastro"}
           </button>
         </form>
+      </div>
+    </div>
+  );
+}
+
+interface ManageUsersModalProps {
+  onClose: () => void;
+  onUpdated: (user: AppUser, message: string) => void;
+}
+
+function ManageUsersModal({ onClose, onUpdated }: ManageUsersModalProps) {
+  const [token, setToken] = useState("");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [users, setUsers] = useState<AdminUser[]>([]);
+  const [selectedId, setSelectedId] = useState("");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [avatarDataUrl, setAvatarDataUrl] = useState("");
+  const [removeAvatar, setRemoveAvatar] = useState(false);
+  const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const selectedUser = users.find((user) => user.id === selectedId) || null;
+  const avatarPreview = removeAvatar ? "" : avatarDataUrl || selectedUser?.avatarUrl || "";
+
+  function selectUser(user: AdminUser) {
+    setSelectedId(user.id);
+    setName(user.name);
+    setEmail(user.email);
+    setAvatarDataUrl("");
+    setRemoveAvatar(false);
+    setError("");
+    setMessage("");
+  }
+
+  async function closeModal() {
+    if (token) {
+      try {
+        await adminLogout(token);
+      } catch {
+        // O token administrativo tambem expira quando o servidor reinicia.
+      }
+    }
+    onClose();
+  }
+
+  async function handleLogin(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setLoading(true);
+    setError("");
+
+    try {
+      const loginData = await adminLogin(username, password);
+      const data = await fetchAdminUsers(loginData.token);
+      setToken(loginData.token);
+      setUsers(data.users);
+      setUsername("");
+      setPassword("");
+      if (data.users[0]) selectUser(data.users[0]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Nao foi possivel entrar.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleAvatarFile(file?: File) {
+    if (!file) return;
+
+    try {
+      setError("");
+      setAvatarDataUrl(await prepareAvatar(file));
+      setRemoveAvatar(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Nao foi possivel preparar a foto.");
+    }
+  }
+
+  async function handleSave(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!selectedUser) return;
+
+    setLoading(true);
+    setError("");
+    setMessage("");
+
+    try {
+      const data = await updateAdminUser(token, selectedUser.id, {
+        name,
+        email,
+        avatarDataUrl: avatarDataUrl || undefined,
+        removeAvatar,
+      });
+      setUsers((current) =>
+        current
+          .map((user) => (user.id === data.user.id ? data.user : user))
+          .sort((left, right) => left.name.localeCompare(right.name, "pt-BR"))
+      );
+      selectUser(data.user);
+      setMessage(data.message || "Dados atualizados com sucesso.");
+      onUpdated(data.user, data.message || "Dados atualizados com sucesso.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Nao foi possivel atualizar.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") void closeModal();
+    }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [token]);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/65 px-4 py-6 backdrop-blur-sm" onClick={() => void closeModal()}>
+      <div className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-3xl bg-white p-5 shadow-2xl sm:p-7" onClick={(event) => event.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="manage-title">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-700">Área protegida</p>
+            <h2 id="manage-title" className="mt-2 text-2xl font-black text-slate-950">Gerenciar pessoas</h2>
+            <p className="mt-2 text-sm text-slate-500">Confirme o acesso administrativo para visualizar e editar os dados.</p>
+          </div>
+          <button type="button" className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-bold text-slate-600 hover:bg-slate-100" onClick={() => void closeModal()}>Fechar</button>
+        </div>
+
+        {!token ? (
+          <form className="mt-6 space-y-4" onSubmit={handleLogin}>
+            <Alert type="error" message={error} />
+            <label className="block">
+              <span className="text-sm font-bold text-slate-700">Usuário administrativo</span>
+              <input className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100" value={username} onChange={(event) => setUsername(event.target.value)} autoComplete="username" required />
+            </label>
+            <label className="block">
+              <span className="text-sm font-bold text-slate-700">Senha administrativa</span>
+              <span className="relative mt-2 block">
+                <input className="w-full rounded-xl border border-slate-300 px-4 py-3 pr-12 outline-none transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100" type={showPassword ? "text" : "password"} value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" required />
+                <button type="button" className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg p-2 text-slate-500 hover:bg-slate-100" onClick={() => setShowPassword((current) => !current)} aria-label={showPassword ? "Ocultar senha" : "Exibir senha"}>
+                  {showPassword ? <EyeOffIcon /> : <EyeIcon />}
+                </button>
+              </span>
+            </label>
+            <button type="submit" disabled={loading} className="flex min-h-[52px] w-full items-center justify-center gap-3 rounded-xl bg-slate-950 px-5 py-3.5 font-black text-white transition hover:bg-slate-800 disabled:bg-slate-300">
+              {loading && <Spinner />}
+              {loading ? "Confirmando..." : "Visualizar dados"}
+            </button>
+          </form>
+        ) : (
+          <div className="mt-6 grid gap-5 md:grid-cols-[220px_1fr]">
+            <div className="space-y-2">
+              {users.map((user) => (
+                <button key={user.id} type="button" className={`flex w-full items-center gap-3 rounded-xl border p-3 text-left transition ${selectedId === user.id ? "border-cyan-500 bg-cyan-50" : "border-slate-200 hover:border-cyan-300"}`} onClick={() => selectUser(user)}>
+                  <Avatar name={user.name} avatarUrl={user.avatarUrl} selected={selectedId === user.id} />
+                  <span className="min-w-0">
+                    <span className="block truncate text-sm font-bold text-slate-900">{user.name}</span>
+                    <span className="block truncate text-xs text-slate-500">{user.email}</span>
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            {selectedUser && (
+              <form className="space-y-4 rounded-2xl border border-slate-200 bg-slate-50 p-4" onSubmit={handleSave}>
+                <Alert type="error" message={error} />
+                <Alert type="success" message={message} />
+                <div className="flex flex-wrap items-center gap-4">
+                  <Avatar name={name || selectedUser.name} avatarUrl={avatarPreview} className="h-20 w-20" />
+                  <label className="cursor-pointer rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 hover:border-cyan-400">
+                    Trocar foto
+                    <input className="sr-only" type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => void handleAvatarFile(event.target.files?.[0])} />
+                  </label>
+                  {avatarPreview && (
+                    <button type="button" className="text-sm font-bold text-red-600" onClick={() => { setAvatarDataUrl(""); setRemoveAvatar(true); }}>Remover foto</button>
+                  )}
+                </div>
+                <label className="block">
+                  <span className="text-sm font-bold text-slate-700">Nome</span>
+                  <input className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100" value={name} onChange={(event) => setName(event.target.value)} required />
+                </label>
+                <label className="block">
+                  <span className="text-sm font-bold text-slate-700">E-mail</span>
+                  <input className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100" type="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
+                </label>
+                <button type="submit" disabled={loading} className="flex min-h-[52px] w-full items-center justify-center gap-3 rounded-xl bg-cyan-700 px-5 py-3.5 font-black text-white transition hover:bg-cyan-800 disabled:bg-slate-300">
+                  {loading && <Spinner />}
+                  {loading ? "Salvando..." : "Salvar alterações"}
+                </button>
+              </form>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
