@@ -5,9 +5,11 @@
   "main": "server.js",
   "scripts": {
     "build:frontend": "esbuild frontend/main.tsx --bundle --format=esm --outfile=frontend/dist/main.js --sourcemap",
+    "db:inspect": "node backend/inspect-db.js",
+    "db:migrate": "node backend/migrate.js",
     "watch:frontend": "esbuild frontend/main.tsx --bundle --format=esm --outfile=frontend/dist/main.js --sourcemap --watch",
     "start": "npm run build:frontend && node server.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node --test"
   },
   "keywords": [],
   "author": "",
@@ -17,6 +19,7 @@
     "cors": "^2.8.6",
     "esbuild": "^0.28.0",
     "express": "^5.2.1",
+    "pg": "^8.21.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6"
   },

@@ -1,7 +1,18 @@
 const express = require("express");
 const cors = require("cors");
-const fs = require("fs");
 const path = require("path");
+const { DatabaseConfigurationError } = require("./database");
+const { loadEnvFile } = require("./env");
+
+loadEnvFile();
+
+const {
+  cancelCurrentRequest,
+  createRequest,
+  getCurrentRequest,
+  getRequestTimeoutMinutes,
+} = require("./services/code-requests");
+const { createUser, listActiveUsers, validateUserInput } = require("./services/users");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -9,42 +20,6 @@ const FRONTEND_PATH = path.join(__dirname, "..", "frontend");
 
 // Este projeto e apenas um prototipo interno.
 // Nao use este modelo de autenticacao/token em producao.
-
-// Carrega variaveis do arquivo .env sem depender de bibliotecas extras.
-// O arquivo .env guarda credenciais locais e nao deve ser enviado para GitHub.
-function loadEnvFile() {
-  const envPath = path.join(__dirname, "..", ".env");
-
-  if (!fs.existsSync(envPath)) {
-    return;
-  }
-
-  const lines = fs.readFileSync(envPath, "utf8").split(/\r?\n/);
-
-  for (const line of lines) {
-    const trimmedLine = line.trim();
-
-    if (!trimmedLine || trimmedLine.startsWith("#")) {
-      continue;
-    }
-
-    const separatorIndex = trimmedLine.indexOf("=");
-
-    if (separatorIndex === -1) {
-      continue;
-    }
-
-    const key = trimmedLine.slice(0, separatorIndex).trim();
-    const value = trimmedLine.slice(separatorIndex + 1).trim();
-
-    if (key && !process.env[key]) {
-      process.env[key] = value;
-    }
-  }
-}
-
-loadEnvFile();
-
 app.use(cors());
 app.use(express.json());
 app.use(express.static(FRONTEND_PATH));
@@ -86,6 +61,10 @@ function authMiddleware(req, res, next) {
 
   req.token = token;
   next();
+}
+
+function adminCredentialsAreValid(username, password) {
+  return Boolean(APP_USER && APP_PASSWORD && username === APP_USER && password === APP_PASSWORD);
 }
 
 function getMissingGmailEnvVars() {
@@ -241,6 +220,98 @@ app.post("/api/logout", authMiddleware, (req, res) => {
   });
 });
 
+app.get("/api/users", async (req, res, next) => {
+  try {
+    const users = await listActiveUsers();
+    return res.json({ users });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+app.post("/api/users", async (req, res, next) => {
+  const { name, email, username, password } = req.body;
+
+  if (!adminCredentialsAreValid(username, password)) {
+    return res.status(401).json({
+      message: "Confirme o usuario e a senha administrativos para salvar o cadastro.",
+    });
+  }
+
+  const validatedUser = validateUserInput(name, email);
+
+  if (validatedUser.error) {
+    return res.status(400).json({ message: validatedUser.error });
+  }
+
+  try {
+    const user = await createUser(validatedUser.name, validatedUser.email);
+    return res.status(201).json({
+      user,
+      message: `${user.name} foi cadastrado com sucesso.`,
+    });
+  } catch (err) {
+    if (err.code === "23505") {
+      return res.status(409).json({
+        message: "Ja existe um usuario cadastrado com esse nome ou e-mail.",
+      });
+    }
+
+    return next(err);
+  }
+});
+
+app.get("/api/requests/current", async (req, res, next) => {
+  try {
+    const request = await getCurrentRequest();
+    return res.json({ request });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+app.post("/api/requests", async (req, res, next) => {
+  const userId = String(req.body.userId || "");
+
+  if (!/^\d+$/.test(userId)) {
+    return res.status(400).json({ message: "Selecione um usuario valido." });
+  }
+
+  try {
+    const result = await createRequest(userId);
+
+    if (result.userNotFound) {
+      return res.status(404).json({ message: "Usuario nao encontrado ou inativo." });
+    }
+
+    if (result.conflict) {
+      return res.status(409).json({
+        request: result.conflict,
+        message: `Ops! ${result.conflict.userName} esta aguardando um codigo no momento. Tente novamente em alguns minutos.`,
+      });
+    }
+
+    return res.status(201).json({
+      request: result.request,
+      message: `A vez de ${result.request.userName} foi reservada por ate ${getRequestTimeoutMinutes()} minutos.`,
+    });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+app.delete("/api/requests/current", authMiddleware, async (req, res, next) => {
+  try {
+    const canceled = await cancelCurrentRequest();
+    return res.json({
+      canceled,
+      message: canceled ? "Solicitacao cancelada." : "Nao ha solicitacao aguardando.",
+    });
+  } catch (err) {
+    return next(err);
+  }
+});
+
 app.get("/api/code", authMiddleware, (req, res) => {
   if (!lastCode) {
     return res.json({
@@ -323,6 +394,29 @@ app.use((req, res) => {
   res.sendFile(path.join(FRONTEND_PATH, "index.html"));
 });
 
-app.listen(PORT, () => {
-  console.log(`Acesso OpenAI rodando em http://localhost:${PORT}`);
+app.use((err, req, res, next) => {
+  if (err instanceof DatabaseConfigurationError) {
+    return res.status(503).json({ message: err.message });
+  }
+
+  console.error(err);
+  return res.status(500).json({ message: "Ocorreu um erro interno no servidor." });
 });
+
+function startServer(port = PORT, options = {}) {
+  const server = app.listen(port, () => {
+    if (!options.silent) {
+      const address = server.address();
+      const activePort = typeof address === "object" && address ? address.port : port;
+      console.log(`Acesso OpenAI rodando em http://localhost:${activePort}`);
+    }
+  });
+
+  return server;
+}
+
+if (require.main === module) {
+  startServer();
+}
+
+module.exports = { app, startServer };

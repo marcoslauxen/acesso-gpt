@@ -11,4 +11,4 @@ if (!fs.existsSync(frontendBundlePath)) {
   execFileSync(npmCommand, ["run", "build:frontend"], { stdio: "inherit" });
 }
 
-require("./backend/server");
+require("./backend/server").startServer();
