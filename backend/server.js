@@ -10,8 +10,17 @@ const {
   cancelCurrentRequest,
   createRequest,
   getCurrentRequest,
+  getRequestStatus,
   getRequestTimeoutMinutes,
 } = require("./services/code-requests");
+const {
+  collectGmailCodes,
+  findLatestGmailCode,
+  getGmailReceiver,
+  getGmailSender,
+  getMissingGmailEnvVars,
+} = require("./services/gmail");
+const { createRequestObserver } = require("./services/request-observer");
 const { createUser, listActiveUsers, validateUserInput } = require("./services/users");
 
 const app = express();
@@ -37,10 +46,7 @@ const activeTokens = new Set();
 // Ao reiniciar o servidor, esse valor sera perdido.
 let lastCode = null;
 
-// Configuracao do e-mail usado para buscar codigos reais.
-// A senha do Gmail nunca deve ficar no frontend nem dentro deste arquivo.
-const GMAIL_SENDER = "noreply@tm.openai.com";
-const GMAIL_RECEIVER = "gptpensador@gmail.com";
+const requestObserver = createRequestObserver();
 
 function createToken() {
   return `token-${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -65,129 +71,6 @@ function authMiddleware(req, res, next) {
 
 function adminCredentialsAreValid(username, password) {
   return Boolean(APP_USER && APP_PASSWORD && username === APP_USER && password === APP_PASSWORD);
-}
-
-function getMissingGmailEnvVars() {
-  return ["GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "GOOGLE_REFRESH_TOKEN"].filter(
-    (envName) => !process.env[envName]
-  );
-}
-
-async function getGmailAccessToken() {
-  const missingVars = getMissingGmailEnvVars();
-
-  if (missingVars.length > 0) {
-    throw new Error(
-      `Configure as variaveis de ambiente para Gmail: ${missingVars.join(", ")}.`
-    );
-  }
-
-  const response = await fetch("https://oauth2.googleapis.com/token", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      client_id: process.env.GOOGLE_CLIENT_ID,
-      client_secret: process.env.GOOGLE_CLIENT_SECRET,
-      refresh_token: process.env.GOOGLE_REFRESH_TOKEN,
-      grant_type: "refresh_token",
-    }),
-  });
-
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(data.error_description || "Nao foi possivel autenticar no Gmail.");
-  }
-
-  return data.access_token;
-}
-
-async function gmailRequest(requestPath, accessToken) {
-  const response = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/${requestPath}`, {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  });
-
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(data.error?.message || "Nao foi possivel consultar o Gmail.");
-  }
-
-  return data;
-}
-
-function decodeBase64Url(value = "") {
-  return Buffer.from(value.replace(/-/g, "+").replace(/_/g, "/"), "base64").toString("utf8");
-}
-
-function extractMessageText(payload) {
-  if (!payload) {
-    return "";
-  }
-
-  const currentText = payload.body?.data ? decodeBase64Url(payload.body.data) : "";
-  const childText = (payload.parts || []).map(extractMessageText).join("\n");
-
-  return `${currentText}\n${childText}`;
-}
-
-function extractReceivedAt(headers = []) {
-  const dateHeader = headers.find((header) => header.name.toLowerCase() === "date");
-
-  if (!dateHeader) {
-    return new Date().toISOString();
-  }
-
-  const parsedDate = new Date(dateHeader.value);
-  return Number.isNaN(parsedDate.getTime()) ? new Date().toISOString() : parsedDate.toISOString();
-}
-
-async function collectGmailCodes(maxCodes = 10) {
-  const accessToken = await getGmailAccessToken();
-  const query = encodeURIComponent(`from:${GMAIL_SENDER}`);
-  const listMax = Math.min(100, Math.max(maxCodes * 10, 20));
-  const list = await gmailRequest(`messages?q=${query}&maxResults=${listMax}`, accessToken);
-
-  if (!list.messages || list.messages.length === 0) {
-    return [];
-  }
-
-  const results = [];
-  const seen = new Set();
-
-  for (const message of list.messages) {
-    if (results.length >= maxCodes) {
-      break;
-    }
-
-    const details = await gmailRequest(`messages/${message.id}?format=full`, accessToken);
-    const text = `${details.snippet || ""}\n${extractMessageText(details.payload)}`;
-    const codeMatch = text.match(/\b\d{6}\b/);
-
-    if (!codeMatch) {
-      continue;
-    }
-
-    const receivedAt = extractReceivedAt(details.payload?.headers);
-    const key = `${codeMatch[0]}|${receivedAt}`;
-
-    if (seen.has(key)) {
-      continue;
-    }
-
-    seen.add(key);
-    results.push({
-      code: codeMatch[0],
-      receivedAt,
-    });
-  }
-
-  return results;
-}
-
-async function findLatestGmailCode() {
-  const codes = await collectGmailCodes(1);
-  return codes[0] || null;
 }
 
 app.post("/api/login", (req, res) => {
@@ -291,10 +174,30 @@ app.post("/api/requests", async (req, res, next) => {
       });
     }
 
+    requestObserver.wake();
+
     return res.status(201).json({
       request: result.request,
       message: `A vez de ${result.request.userName} foi reservada por ate ${getRequestTimeoutMinutes()} minutos.`,
     });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+app.get("/api/requests/:requestId", async (req, res, next) => {
+  if (!/^\d+$/.test(req.params.requestId)) {
+    return res.status(400).json({ message: "Solicitacao invalida." });
+  }
+
+  try {
+    const request = await getRequestStatus(req.params.requestId);
+
+    if (!request) {
+      return res.status(404).json({ message: "Solicitacao nao encontrada." });
+    }
+
+    return res.json({ request });
   } catch (err) {
     return next(err);
   }
@@ -343,7 +246,7 @@ app.get("/api/code/email", authMiddleware, async (req, res) => {
 
     if (!gmailCode) {
       return res.json({
-        message: `Nenhum codigo foi encontrado em e-mails recentes de ${GMAIL_SENDER}.`,
+        message: `Nenhum codigo foi encontrado em e-mails recentes de ${getGmailSender()}.`,
       });
     }
 
@@ -351,7 +254,7 @@ app.get("/api/code/email", authMiddleware, async (req, res) => {
 
     return res.json({
       ...lastCode,
-      message: `Codigo encontrado no Gmail ${GMAIL_RECEIVER}.`,
+      message: `Codigo encontrado no Gmail ${getGmailReceiver()}.`,
     });
   } catch (err) {
     return res.status(503).json({
@@ -367,13 +270,13 @@ app.get("/api/code/email/history", authMiddleware, async (req, res) => {
     if (codes.length === 0) {
       return res.json({
         codes: [],
-        message: `Nenhum codigo foi encontrado em e-mails recentes de ${GMAIL_SENDER}.`,
+        message: `Nenhum codigo foi encontrado em e-mails recentes de ${getGmailSender()}.`,
       });
     }
 
     return res.json({
       codes,
-      message: `Historico do Gmail (${GMAIL_RECEIVER}).`,
+      message: `Historico do Gmail (${getGmailReceiver()}).`,
     });
   } catch (err) {
     return res.status(503).json({
@@ -411,6 +314,14 @@ function startServer(port = PORT, options = {}) {
       console.log(`Acesso OpenAI rodando em http://localhost:${activePort}`);
     }
   });
+
+  if (process.env.DATABASE_URL && getMissingGmailEnvVars().length === 0) {
+    void requestObserver.start();
+  } else if (!options.silent) {
+    console.warn("Observador de codigos desativado: banco ou Gmail nao configurado.");
+  }
+
+  server.on("close", () => requestObserver.stop());
 
   return server;
 }

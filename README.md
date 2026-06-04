@@ -55,6 +55,9 @@ REQUEST_TIMEOUT_MINUTES=5
 GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
 GOOGLE_REFRESH_TOKEN=
+GMAIL_SENDER=noreply@tm.openai.com
+GMAIL_RECEIVER=gptpensador@gmail.com
+GMAIL_POLL_INTERVAL_SECONDS=10
 ```
 
 Use `DATABASE_SSL=true` quando o provedor do PostgreSQL exigir SSL.
@@ -67,11 +70,23 @@ As migrations criam estas tabelas:
 - `code_requests`: solicitacoes, expiracao e controle da vez exclusiva.
 - `delivery_history`: resultado dos envios, sem armazenar o codigo.
 
+Quando um usuario reserva a vez, o backend consulta o Gmail a cada dez segundos
+durante no maximo cinco minutos. Sem solicitacao ativa, o observador fica
+desligado. Somente codigos recebidos depois da solicitacao podem ser enviados. O
+codigo nao e armazenado no banco.
+
 Para visualizar os usuarios, a solicitacao atual e as ultimas solicitacoes sem
 instalar um aplicativo de banco:
 
 ```bash
 npm run db:inspect
+```
+
+Para validar a autenticacao e as permissoes de leitura e envio do Gmail sem
+enviar e-mail:
+
+```bash
+npm run gmail:check
 ```
 
 ## APIs da primeira etapa
@@ -80,6 +95,7 @@ npm run db:inspect
 - `POST /api/users`: cadastra nome e e-mail mediante confirmacao administrativa.
 - `GET /api/requests/current`: informa quem esta aguardando.
 - `POST /api/requests`: reserva a vez exclusiva por cinco minutos.
+- `GET /api/requests/:requestId`: informa o resultado de uma solicitacao.
 - `DELETE /api/requests/current`: cancela a solicitacao usando o token administrativo.
 
 ## Observacoes de seguranca

@@ -26,10 +26,10 @@ async function getCurrentRequest() {
 
     const result = await client.query(
       `SELECT cr.id, cr.user_id AS "userId", u.name AS "userName",
-              cr.requested_at AS "requestedAt", cr.expires_at AS "expiresAt"
+              cr.status, cr.requested_at AS "requestedAt", cr.expires_at AS "expiresAt"
        FROM code_requests cr
        JOIN app_users u ON u.id = cr.user_id
-       WHERE cr.status = 'waiting'
+       WHERE cr.status IN ('waiting', 'processing')
        LIMIT 1`
     );
 
@@ -45,10 +45,10 @@ async function createRequest(userId) {
 
     const activeRequest = await client.query(
       `SELECT cr.id, cr.user_id AS "userId", u.name AS "userName",
-              cr.requested_at AS "requestedAt", cr.expires_at AS "expiresAt"
+              cr.status, cr.requested_at AS "requestedAt", cr.expires_at AS "expiresAt"
        FROM code_requests cr
        JOIN app_users u ON u.id = cr.user_id
-       WHERE cr.status = 'waiting'
+       WHERE cr.status IN ('waiting', 'processing')
        LIMIT 1`
     );
 
@@ -96,10 +96,137 @@ async function cancelCurrentRequest() {
   return result.rowCount > 0;
 }
 
+async function getCurrentRequestForObserver() {
+  return withTransaction(async (client) => {
+    await expireStaleRequests(client);
+
+    const result = await client.query(
+      `SELECT cr.id, cr.user_id AS "userId", u.name AS "userName",
+              u.email AS "userEmail", cr.requested_at AS "requestedAt",
+              cr.expires_at AS "expiresAt"
+       FROM code_requests cr
+       JOIN app_users u ON u.id = cr.user_id
+       WHERE cr.status = 'waiting'
+       LIMIT 1`
+    );
+
+    return result.rows[0] || null;
+  });
+}
+
+async function getRequestStatus(requestId) {
+  return withTransaction(async (client) => {
+    await expireStaleRequests(client);
+
+    const result = await client.query(
+      `SELECT cr.id, cr.user_id AS "userId", u.name AS "userName", cr.status,
+              cr.requested_at AS "requestedAt", cr.expires_at AS "expiresAt",
+              cr.completed_at AS "completedAt"
+       FROM code_requests cr
+       JOIN app_users u ON u.id = cr.user_id
+       WHERE cr.id = $1`,
+      [requestId]
+    );
+
+    return result.rows[0] || null;
+  });
+}
+
+async function claimRequestForDelivery(requestId, sourceMessageId) {
+  try {
+    return await withTransaction(async (client) => {
+      const result = await client.query(
+        `UPDATE code_requests cr
+         SET status = 'processing', source_message_id = $2
+         FROM app_users u
+         WHERE cr.id = $1
+           AND cr.user_id = u.id
+           AND cr.status = 'waiting'
+           AND cr.expires_at > NOW()
+         RETURNING cr.id, cr.user_id AS "userId", u.name AS "userName",
+                   u.email AS "userEmail", cr.source_message_id AS "sourceMessageId"`,
+        [requestId, sourceMessageId]
+      );
+
+      return result.rows[0] || null;
+    });
+  } catch (err) {
+    if (err.code === "23505") {
+      return null;
+    }
+
+    throw err;
+  }
+}
+
+async function completeRequestDelivery(request, status, detail = null) {
+  if (!["sent", "failed"].includes(status)) {
+    throw new Error("Status de entrega invalido.");
+  }
+
+  return withTransaction(async (client) => {
+    const completed = await client.query(
+      `UPDATE code_requests
+       SET status = $2, completed_at = NOW()
+       WHERE id = $1 AND status = 'processing'
+       RETURNING id`,
+      [request.id, status]
+    );
+
+    if (completed.rowCount === 0) {
+      return false;
+    }
+
+    await client.query(
+      `INSERT INTO delivery_history
+         (request_id, user_id, recipient_email, status, detail, delivered_at)
+       VALUES ($1, $2, $3, $4::VARCHAR, $5,
+               CASE WHEN $4::VARCHAR = 'sent' THEN NOW() ELSE NULL END)`,
+      [request.id, request.userId, request.userEmail, status, detail]
+    );
+
+    return true;
+  });
+}
+
+async function failInterruptedDeliveries() {
+  return withTransaction(async (client) => {
+    const interrupted = await client.query(
+      `UPDATE code_requests cr
+       SET status = 'failed', completed_at = NOW()
+       FROM app_users u
+       WHERE cr.user_id = u.id AND cr.status = 'processing'
+       RETURNING cr.id, cr.user_id AS "userId", u.email AS "userEmail"`
+    );
+
+    for (const request of interrupted.rows) {
+      await client.query(
+        `INSERT INTO delivery_history
+           (request_id, user_id, recipient_email, status, detail)
+         VALUES ($1, $2, $3, 'failed', $4)
+         ON CONFLICT (request_id) DO NOTHING`,
+        [
+          request.id,
+          request.userId,
+          request.userEmail,
+          "Envio interrompido por reinicio do servidor.",
+        ]
+      );
+    }
+
+    return interrupted.rowCount;
+  });
+}
+
 module.exports = {
   DEFAULT_REQUEST_TIMEOUT_MINUTES,
   cancelCurrentRequest,
+  claimRequestForDelivery,
+  completeRequestDelivery,
   createRequest,
+  failInterruptedDeliveries,
   getCurrentRequest,
+  getCurrentRequestForObserver,
+  getRequestStatus,
   getRequestTimeoutMinutes,
 };

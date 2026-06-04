@@ -25,6 +25,15 @@ async function inspectDatabase() {
      ORDER BY cr.requested_at DESC
      LIMIT 20`
   );
+  const recentDeliveries = await query(
+    `SELECT dh.id, u.name AS "userName", dh.recipient_email AS "recipientEmail",
+            dh.status, dh.detail, dh.delivered_at AS "deliveredAt",
+            dh.created_at AS "createdAt"
+     FROM delivery_history dh
+     JOIN app_users u ON u.id = dh.user_id
+     ORDER BY dh.created_at DESC
+     LIMIT 20`
+  );
 
   console.log("\nUsuarios");
   console.table(users.rows);
@@ -32,6 +41,8 @@ async function inspectDatabase() {
   console.table(currentRequest.rows);
   console.log("\nUltimas solicitacoes");
   console.table(recentRequests.rows);
+  console.log("\nUltimas entregas");
+  console.table(recentDeliveries.rows);
 }
 
 inspectDatabase()

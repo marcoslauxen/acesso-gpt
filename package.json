@@ -7,6 +7,7 @@
     "build:frontend": "esbuild frontend/main.tsx --bundle --format=esm --outfile=frontend/dist/main.js --sourcemap",
     "db:inspect": "node backend/inspect-db.js",
     "db:migrate": "node backend/migrate.js",
+    "gmail:check": "node backend/check-gmail.js",
     "watch:frontend": "esbuild frontend/main.tsx --bundle --format=esm --outfile=frontend/dist/main.js --sourcemap --watch",
     "start": "npm run build:frontend && node server.js",
     "test": "node --test"
