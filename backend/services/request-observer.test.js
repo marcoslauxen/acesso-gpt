@@ -1,6 +1,6 @@
 const assert = require("node:assert/strict");
 const test = require("node:test");
-const { createRequestObserver } = require("./request-observer");
+const { createRequestObserver, getCodeSearchStart } = require("./request-observer");
 
 function createDependencies(overrides = {}) {
   return {
@@ -44,6 +44,25 @@ test("envia e conclui uma solicitacao quando encontra codigo novo", async () => 
   assert.equal(events[1][2], "sent");
 });
 
+test("procura codigos recebidos ate cinco minutos antes da solicitacao", async () => {
+  let receivedAfter;
+  const observer = createRequestObserver(
+    createDependencies({
+      findLatestGmailCode: async (options) => {
+        receivedAfter = options.receivedAfter;
+        return null;
+      },
+    })
+  );
+
+  assert.equal(await observer.processCurrentRequest(), "waiting");
+  assert.equal(receivedAfter, "2026-06-04T17:55:00.000Z");
+  assert.equal(
+    getCodeSearchStart("2026-06-04T18:00:00.000Z", 3),
+    "2026-06-04T17:57:00.000Z"
+  );
+});
+
 test("continua aguardando quando nenhum codigo novo chegou", async () => {
   let claimed = false;
   const observer = createRequestObserver(
@@ -57,6 +76,16 @@ test("continua aguardando quando nenhum codigo novo chegou", async () => {
 
   assert.equal(await observer.processCurrentRequest(), "waiting");
   assert.equal(claimed, false);
+});
+
+test("continua aguardando quando o codigo recente ja foi utilizado", async () => {
+  const observer = createRequestObserver(
+    createDependencies({
+      claimRequestForDelivery: async () => null,
+    })
+  );
+
+  assert.equal(await observer.processCurrentRequest(), "waiting");
 });
 
 test("registra falha de envio e libera a solicitacao", async () => {

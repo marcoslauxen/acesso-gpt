@@ -20,7 +20,10 @@ const {
   getGmailSender,
   getMissingGmailEnvVars,
 } = require("./services/gmail");
-const { createRequestObserver } = require("./services/request-observer");
+const {
+  createRequestObserver,
+  getCodeLookbackMinutes,
+} = require("./services/request-observer");
 const {
   createUser,
   getUserAvatar,
@@ -277,7 +280,7 @@ app.post("/api/requests", async (req, res, next) => {
 
     return res.status(201).json({
       request: result.request,
-      message: `A vez de ${result.request.userName} foi reservada por ate ${getRequestTimeoutMinutes()} minutos.`,
+      message: `A vez de ${result.request.userName} foi reservada por ate ${getRequestTimeoutMinutes()} minutos. Vamos procurar um codigo recebido nos ultimos ${getCodeLookbackMinutes()} minutos ou aguardar um novo.`,
     });
   } catch (err) {
     return next(err);

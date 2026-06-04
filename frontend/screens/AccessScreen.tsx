@@ -69,7 +69,7 @@ function statusMessage(status?: RequestStatus) {
     case "sent":
       return { type: "success" as const, text: "Codigo enviado! Confira a caixa de entrada do seu e-mail." };
     case "expired":
-      return { type: "error" as const, text: "Nenhum codigo novo chegou em 5 minutos. Solicite novamente quando precisar." };
+      return { type: "error" as const, text: "Nenhum codigo disponivel foi encontrado em 5 minutos. Solicite novamente quando precisar." };
     case "failed":
       return { type: "error" as const, text: "Encontramos o codigo, mas nao foi possivel enviar o e-mail. Tente novamente." };
     case "canceled":
@@ -164,7 +164,7 @@ function AccessScreen() {
         setOwnRequestId(data.request.id);
         setCurrentRequest(data.request);
       }
-      showMessage("info", data.message || "Solicitacao iniciada. Aguardando um novo codigo.");
+      showMessage("info", data.message || "Procurando um codigo recente ou aguardando um novo.");
     } catch (err) {
       if (err instanceof ApiError && err.status === 409) {
         await loadCurrentRequest();
@@ -324,7 +324,7 @@ function AccessScreen() {
                   ? "Solicitando..."
                   : requestActive
                     ? selectedUserWaiting
-                      ? "Aguardando novo codigo"
+                      ? "Procurando codigo"
                       : `${currentRequest?.userName} esta na vez`
                     : selectedUser
                       ? `Enviar codigo para ${selectedUser.name}`
@@ -344,7 +344,7 @@ function AccessScreen() {
                       <span className="relative inline-flex h-3 w-3 rounded-full bg-amber-300" />
                     </span>
                     <span className="text-sm font-bold text-amber-100">
-                      {currentRequest.status === "processing" ? "Enviando por e-mail" : "Aguardando novo codigo"}
+                      {currentRequest.status === "processing" ? "Enviando por e-mail" : "Procurando codigo"}
                     </span>
                   </div>
                   <p className="mt-5 text-2xl font-black">{currentRequest.userName}</p>
@@ -374,9 +374,10 @@ function AccessScreen() {
             )}
 
             <div className="mt-6 space-y-3 border-t border-white/10 pt-6 text-sm text-slate-300">
-              <p><strong className="text-white">1.</strong> Selecione seu nome.</p>
-              <p><strong className="text-white">2.</strong> Solicite o código.</p>
-              <p><strong className="text-white">3.</strong> Confira seu e-mail.</p>
+              <p><strong className="text-white">1.</strong> No ChatGPT, solicite o código por e-mail.</p>
+              <p><strong className="text-white">2.</strong> Selecione seu nome aqui.</p>
+              <p><strong className="text-white">3.</strong> Clique em enviar código.</p>
+              <p><strong className="text-white">4.</strong> Confira seu e-mail pessoal.</p>
             </div>
           </aside>
         </div>

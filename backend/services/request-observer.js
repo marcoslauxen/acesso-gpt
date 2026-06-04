@@ -7,6 +7,7 @@ const {
 const { findLatestGmailCode, sendCodeEmail } = require("./gmail");
 
 const DEFAULT_POLL_INTERVAL_SECONDS = 10;
+const DEFAULT_GMAIL_CODE_LOOKBACK_MINUTES = 5;
 
 function getPollIntervalMilliseconds() {
   const seconds = Number.parseInt(process.env.GMAIL_POLL_INTERVAL_SECONDS, 10);
@@ -16,6 +17,27 @@ function getPollIntervalMilliseconds() {
   }
 
   return seconds * 1000;
+}
+
+function getCodeLookbackMinutes() {
+  const minutes = Number.parseInt(process.env.GMAIL_CODE_LOOKBACK_MINUTES, 10);
+
+  if (!Number.isInteger(minutes) || minutes < 1 || minutes > 30) {
+    return DEFAULT_GMAIL_CODE_LOOKBACK_MINUTES;
+  }
+
+  return minutes;
+}
+
+function getCodeSearchStart(requestedAt, lookbackMinutes = getCodeLookbackMinutes()) {
+  const searchStart = new Date(requestedAt);
+
+  if (Number.isNaN(searchStart.getTime())) {
+    return requestedAt;
+  }
+
+  searchStart.setMinutes(searchStart.getMinutes() - lookbackMinutes);
+  return searchStart.toISOString();
 }
 
 function createRequestObserver(dependencies = {}) {
@@ -41,7 +63,7 @@ function createRequestObserver(dependencies = {}) {
     }
 
     const gmailCode = await services.findLatestGmailCode({
-      receivedAfter: request.requestedAt,
+      receivedAfter: getCodeSearchStart(request.requestedAt),
     });
 
     if (!gmailCode) {
@@ -54,7 +76,9 @@ function createRequestObserver(dependencies = {}) {
     );
 
     if (!claimedRequest) {
-      return "not-claimed";
+      // A mensagem recente pode ter sido usada por uma solicitacao anterior.
+      // Continua observando ate chegar uma mensagem ainda nao utilizada.
+      return "waiting";
     }
 
     try {
@@ -145,7 +169,10 @@ function createRequestObserver(dependencies = {}) {
 }
 
 module.exports = {
+  DEFAULT_GMAIL_CODE_LOOKBACK_MINUTES,
   DEFAULT_POLL_INTERVAL_SECONDS,
   createRequestObserver,
+  getCodeLookbackMinutes,
+  getCodeSearchStart,
   getPollIntervalMilliseconds,
 };

@@ -58,6 +58,7 @@ GOOGLE_REFRESH_TOKEN=
 GMAIL_SENDER=noreply@tm.openai.com
 GMAIL_RECEIVER=gptpensador@gmail.com
 GMAIL_POLL_INTERVAL_SECONDS=10
+GMAIL_CODE_LOOKBACK_MINUTES=5
 ```
 
 Use `DATABASE_SSL=true` quando o provedor do PostgreSQL exigir SSL.
@@ -70,10 +71,11 @@ As migrations criam estas tabelas:
 - `code_requests`: solicitacoes, expiracao e controle da vez exclusiva.
 - `delivery_history`: resultado dos envios, sem armazenar o codigo.
 
-Quando um usuario reserva a vez, o backend consulta o Gmail a cada dez segundos
-durante no maximo cinco minutos. Sem solicitacao ativa, o observador fica
-desligado. Somente codigos recebidos depois da solicitacao podem ser enviados. O
-codigo nao e armazenado no banco.
+Quando um usuario reserva a vez, o backend primeiro procura um codigo recebido
+nos cinco minutos anteriores e, se nao encontrar um codigo disponivel, consulta
+o Gmail a cada dez segundos durante no maximo cinco minutos. Sem solicitacao
+ativa, o observador fica desligado. Cada mensagem do Gmail pode ser usada uma
+unica vez e o codigo nao e armazenado no banco.
 
 Para visualizar os usuarios, a solicitacao atual e as ultimas solicitacoes sem
 instalar um aplicativo de banco:
