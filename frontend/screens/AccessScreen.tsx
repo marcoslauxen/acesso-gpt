@@ -243,7 +243,7 @@ function AccessScreen() {
           <section className="rounded-3xl border border-white/80 bg-white/90 p-5 shadow-xl shadow-slate-300/40 sm:p-7">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-700">Passo 1</p>
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-700">Identificação</p>
                 <h2 className="mt-2 text-2xl font-black text-slate-950">Selecione seu nome</h2>
                 <p className="mt-1 text-sm text-slate-500">Seu e-mail nunca aparece nesta lista.</p>
               </div>
