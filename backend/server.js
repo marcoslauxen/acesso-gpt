@@ -33,6 +33,11 @@ const {
   updateUser,
   validateUserInput,
 } = require("./services/users");
+const {
+  GroqConfigurationError,
+  GroqRequestError,
+  requestGroqChat,
+} = require("./services/groq-assistant");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -58,6 +63,9 @@ const activeTokens = new Set();
 let lastCode = null;
 
 const requestObserver = createRequestObserver();
+const assistantRateLimits = new Map();
+const ASSISTANT_RATE_LIMIT = 20;
+const ASSISTANT_RATE_WINDOW_MS = 60 * 1000;
 
 function createToken() {
   return `token-${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -82,6 +90,24 @@ function authMiddleware(req, res, next) {
 
 function adminCredentialsAreValid(username, password) {
   return Boolean(APP_USER && APP_PASSWORD && username === APP_USER && password === APP_PASSWORD);
+}
+
+function assistantRateLimitMiddleware(req, res, next) {
+  const now = Date.now();
+  const key = req.ip || "local";
+  const recentRequests = (assistantRateLimits.get(key) || []).filter(
+    (timestamp) => now - timestamp < ASSISTANT_RATE_WINDOW_MS
+  );
+
+  if (recentRequests.length >= ASSISTANT_RATE_LIMIT) {
+    return res.status(429).json({
+      message: "Muitas perguntas em pouco tempo. Aguarde um minuto e tente novamente.",
+    });
+  }
+
+  recentRequests.push(now);
+  assistantRateLimits.set(key, recentRequests);
+  next();
 }
 
 app.post("/api/login", (req, res) => {
@@ -112,6 +138,23 @@ app.post("/api/logout", authMiddleware, (req, res) => {
   return res.json({
     message: "Logout realizado com sucesso.",
   });
+});
+
+app.post("/api/assistant/chat", assistantRateLimitMiddleware, async (req, res) => {
+  try {
+    const result = await requestGroqChat(req.body.messages);
+    return res.json(result);
+  } catch (err) {
+    if (err instanceof GroqConfigurationError) {
+      return res.status(503).json({ message: err.message });
+    }
+
+    if (err instanceof GroqRequestError) {
+      return res.status(err.status).json({ message: err.message });
+    }
+
+    return res.status(500).json({ message: "O assistente encontrou um erro inesperado." });
+  }
 });
 
 app.get("/api/users", async (req, res, next) => {

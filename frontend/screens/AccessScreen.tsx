@@ -2,6 +2,7 @@ import React from "react";
 import { useEffect, useMemo, useState } from "react";
 import Alert from "../components/Alert";
 import AppHeader from "../components/AppHeader";
+import ChatAssistant from "../components/ChatAssistant";
 import { EyeIcon, EyeOffIcon } from "../components/EyeIcons";
 import Spinner from "../components/Spinner";
 import { APP_CONFIG } from "../constants/app";
@@ -395,6 +396,7 @@ function AccessScreen() {
           onUpdated={handleUpdated}
         />
       )}
+      <ChatAssistant />
     </main>
   );
 }

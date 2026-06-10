@@ -68,6 +68,18 @@ export interface EmailCodeHistoryResponse {
   message?: string;
 }
 
+export type AssistantRole = "user" | "assistant";
+
+export interface AssistantMessage {
+  role: AssistantRole;
+  content: string;
+}
+
+export interface AssistantChatResponse {
+  answer: string;
+  model: string;
+}
+
 export class ApiError extends Error {
   status: number;
 
@@ -193,4 +205,19 @@ export async function createCodeRequest(userId: string): Promise<RequestResponse
 export async function fetchRequest(requestId: string): Promise<RequestResponse> {
   const response = await fetch(`/api/requests/${encodeURIComponent(requestId)}`);
   return parseResponse<RequestResponse>(response, "Nao foi possivel acompanhar a solicitacao.");
+}
+
+export async function sendAssistantMessage(
+  messages: AssistantMessage[]
+): Promise<AssistantChatResponse> {
+  const response = await fetch("/api/assistant/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ messages }),
+  });
+
+  return parseResponse<AssistantChatResponse>(
+    response,
+    "O assistente nao conseguiu responder."
+  );
 }
