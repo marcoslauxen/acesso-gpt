@@ -1,6 +1,8 @@
 const { query, withTransaction } = require("../database");
 
 const DEFAULT_REQUEST_TIMEOUT_MINUTES = 5;
+const DEFAULT_REQUEST_HISTORY_LIMIT = 10;
+const MAX_REQUEST_HISTORY_LIMIT = 50;
 
 function getRequestTimeoutMinutes() {
   const configuredValue = Number.parseInt(process.env.REQUEST_TIMEOUT_MINUTES, 10);
@@ -10,6 +12,16 @@ function getRequestTimeoutMinutes() {
   }
 
   return configuredValue;
+}
+
+function normalizeRequestHistoryLimit(value) {
+  const parsedValue = Number(value);
+
+  if (!Number.isInteger(parsedValue) || parsedValue < 1 || parsedValue > MAX_REQUEST_HISTORY_LIMIT) {
+    return DEFAULT_REQUEST_HISTORY_LIMIT;
+  }
+
+  return parsedValue;
 }
 
 async function expireStaleRequests(client) {
@@ -35,6 +47,23 @@ async function getCurrentRequest() {
 
     return result.rows[0] || null;
   });
+}
+
+async function listRecentRequests(limit = DEFAULT_REQUEST_HISTORY_LIMIT, dependencies = {}) {
+  const queryImpl = dependencies.query || query;
+  const result = await queryImpl(
+    `SELECT u.name AS "userName", cr.requested_at AS "requestedAt"
+     FROM code_requests cr
+     JOIN app_users u ON u.id = cr.user_id
+     ORDER BY cr.requested_at DESC
+     LIMIT $1`,
+    [normalizeRequestHistoryLimit(limit)]
+  );
+
+  return result.rows.map((row) => ({
+    userName: row.userName,
+    requestedAt: row.requestedAt,
+  }));
 }
 
 async function createRequest(userId) {
@@ -219,7 +248,9 @@ async function failInterruptedDeliveries() {
 }
 
 module.exports = {
+  DEFAULT_REQUEST_HISTORY_LIMIT,
   DEFAULT_REQUEST_TIMEOUT_MINUTES,
+  MAX_REQUEST_HISTORY_LIMIT,
   cancelCurrentRequest,
   claimRequestForDelivery,
   completeRequestDelivery,
@@ -229,4 +260,6 @@ module.exports = {
   getCurrentRequestForObserver,
   getRequestStatus,
   getRequestTimeoutMinutes,
+  listRecentRequests,
+  normalizeRequestHistoryLimit,
 };
