@@ -2,7 +2,6 @@ import React from "react";
 import { useEffect, useMemo, useState } from "react";
 import Alert from "../components/Alert";
 import AppHeader from "../components/AppHeader";
-import ChatAssistant from "../components/ChatAssistant";
 import { EyeIcon, EyeOffIcon } from "../components/EyeIcons";
 import Spinner from "../components/Spinner";
 import { APP_CONFIG } from "../constants/app";
@@ -13,6 +12,7 @@ import {
   fetchAdminUsers,
   fetchCurrentRequest,
   fetchRequest,
+  fetchRequestHistory,
   fetchUsers,
   login as adminLogin,
   logout as adminLogout,
@@ -20,6 +20,7 @@ import {
   type AdminUser,
   type AppUser,
   type CodeRequest,
+  type RequestHistoryEntry,
   type RequestStatus,
 } from "../services/api";
 import { prepareAvatar } from "../utils/avatar";
@@ -65,6 +66,16 @@ function formatRemaining(expiresAt?: string, now = Date.now()) {
   return `${minutesPart}:${secondsPart}`;
 }
 
+function formatDateTime(value: string) {
+  return new Date(value).toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 function statusMessage(status?: RequestStatus) {
   switch (status) {
     case "sent":
@@ -91,6 +102,7 @@ function AccessScreen() {
   const [requesting, setRequesting] = useState(false);
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState<MessageType>("info");
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [registerOpen, setRegisterOpen] = useState(false);
   const [manageOpen, setManageOpen] = useState(false);
 
@@ -223,6 +235,13 @@ function AccessScreen() {
         <header className="flex flex-col gap-5 rounded-3xl border border-white/80 bg-white/75 p-5 shadow-xl shadow-slate-300/40 backdrop-blur sm:p-7 lg:flex-row lg:items-center lg:justify-between">
           <AppHeader />
           <div className="flex flex-col gap-2 sm:flex-row">
+            <button
+              type="button"
+              className="shrink-0 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-700 transition hover:border-cyan-300 hover:text-cyan-800"
+              onClick={() => setHistoryOpen(true)}
+            >
+              Historico
+            </button>
             <button
               type="button"
               className="shrink-0 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-700 transition hover:border-cyan-300 hover:text-cyan-800"
@@ -380,10 +399,12 @@ function AccessScreen() {
               <p><strong className="text-white">3.</strong> Clique em enviar código.</p>
               <p><strong className="text-white">4.</strong> Confira seu e-mail pessoal.</p>
             </div>
+
           </aside>
         </div>
       </section>
 
+      {historyOpen && <RequestHistoryModal onClose={() => setHistoryOpen(false)} />}
       {registerOpen && (
         <RegisterModal
           onClose={() => setRegisterOpen(false)}
@@ -396,8 +417,116 @@ function AccessScreen() {
           onUpdated={handleUpdated}
         />
       )}
-      <ChatAssistant />
     </main>
+  );
+}
+
+interface RequestHistoryModalProps {
+  onClose: () => void;
+}
+
+function RequestHistoryModal({ onClose }: RequestHistoryModalProps) {
+  const [requests, setRequests] = useState<RequestHistoryEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let active = true;
+
+    void fetchRequestHistory()
+      .then((data) => {
+        if (active) setRequests(data.requests);
+      })
+      .catch((err) => {
+        if (active) {
+          setError(err instanceof Error ? err.message : "Nao foi possivel carregar o historico.");
+        }
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") onClose();
+    }
+
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [onClose]);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/65 px-4 py-6 backdrop-blur-sm"
+      onClick={onClose}
+      role="presentation"
+    >
+      <div
+        className="max-h-[88vh] w-full max-w-2xl overflow-hidden rounded-3xl bg-white shadow-2xl"
+        onClick={(event) => event.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="request-history-title"
+      >
+        <div className="flex items-start justify-between gap-4 border-b border-slate-200 px-5 py-5 sm:px-7">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-700">Historico</p>
+            <h2 id="request-history-title" className="mt-2 text-2xl font-black text-slate-950">
+              Ultimas solicitacoes
+            </h2>
+            <p className="mt-1 text-sm text-slate-500">Somente a pessoa e a data sao exibidas.</p>
+          </div>
+          <button
+            type="button"
+            className="shrink-0 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-bold text-slate-600 transition hover:bg-slate-100"
+            onClick={onClose}
+          >
+            Fechar
+          </button>
+        </div>
+
+        <div className="max-h-[62vh] min-h-64 overflow-y-auto p-5 sm:p-7" aria-live="polite">
+          {loading ? (
+            <div className="flex min-h-52 items-center justify-center gap-3 rounded-2xl bg-slate-50 text-slate-600">
+              <Spinner className="h-5 w-5 border-cyan-700" />
+              <span className="font-semibold">Carregando historico...</span>
+            </div>
+          ) : error ? (
+            <Alert type="error" message={error} />
+          ) : requests.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
+              <p className="font-semibold text-slate-900">Nenhuma solicitacao registrada.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {requests.map((item, index) => (
+                <div
+                  className="flex items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4"
+                  key={`${item.userName}-${item.requestedAt}-${index}`}
+                >
+                  <div className="min-w-0">
+                    <p className="truncate font-bold text-slate-950">{item.userName}</p>
+                    <time className="mt-1 block text-sm text-slate-500" dateTime={item.requestedAt}>
+                      {formatDateTime(item.requestedAt)}
+                    </time>
+                  </div>
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-cyan-100 text-sm font-black text-cyan-800">
+                    {index + 1}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
 

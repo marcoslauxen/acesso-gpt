@@ -37,6 +37,15 @@ export interface RequestResponse {
   message?: string;
 }
 
+export interface RequestHistoryEntry {
+  userName: string;
+  requestedAt: string;
+}
+
+export interface RequestHistoryResponse {
+  requests: RequestHistoryEntry[];
+}
+
 export interface CreateUserInput {
   name: string;
   email: string;
@@ -66,18 +75,6 @@ export interface CodeHistoryEntry {
 export interface EmailCodeHistoryResponse {
   codes: CodeHistoryEntry[];
   message?: string;
-}
-
-export type AssistantRole = "user" | "assistant";
-
-export interface AssistantMessage {
-  role: AssistantRole;
-  content: string;
-}
-
-export interface AssistantChatResponse {
-  answer: string;
-  model: string;
 }
 
 export class ApiError extends Error {
@@ -192,6 +189,14 @@ export async function fetchCurrentRequest(): Promise<RequestResponse> {
   return parseResponse<RequestResponse>(response, "Nao foi possivel consultar a vez atual.");
 }
 
+export async function fetchRequestHistory(): Promise<RequestHistoryResponse> {
+  const response = await fetch("/api/requests/history?limit=10");
+  return parseResponse<RequestHistoryResponse>(
+    response,
+    "Nao foi possivel carregar o historico de solicitacoes."
+  );
+}
+
 export async function createCodeRequest(userId: string): Promise<RequestResponse> {
   const response = await fetch("/api/requests", {
     method: "POST",
@@ -205,19 +210,4 @@ export async function createCodeRequest(userId: string): Promise<RequestResponse
 export async function fetchRequest(requestId: string): Promise<RequestResponse> {
   const response = await fetch(`/api/requests/${encodeURIComponent(requestId)}`);
   return parseResponse<RequestResponse>(response, "Nao foi possivel acompanhar a solicitacao.");
-}
-
-export async function sendAssistantMessage(
-  messages: AssistantMessage[]
-): Promise<AssistantChatResponse> {
-  const response = await fetch("/api/assistant/chat", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ messages }),
-  });
-
-  return parseResponse<AssistantChatResponse>(
-    response,
-    "O assistente nao conseguiu responder."
-  );
 }
