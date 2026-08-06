@@ -326,7 +326,7 @@ function AccessScreen() {
                             ? "border-[#153f36] bg-[#153f36] text-white shadow-lg shadow-[#153f36]/15"
                             : "border-[#e0e5dc] bg-[#f8f9f5] text-[#153f36] hover:-translate-y-0.5 hover:border-[#9bbd64] hover:bg-white hover:shadow-md"
                         }`}
-                        onClick={() => setSelectedUserId(user.id)}
+                        onClick={() => setSelectedUserId((current) => (current === user.id ? "" : user.id))}
                       >
                         <Avatar name={user.name} avatarUrl={user.avatarUrl} selected={selected} className="h-12 w-12" />
                         <span className="min-w-0 flex-1">
