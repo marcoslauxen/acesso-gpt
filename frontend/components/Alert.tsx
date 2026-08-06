@@ -11,10 +11,10 @@ function Alert({ type, message }: AlertProps) {
     type === "error"
       ? "border-red-200 bg-red-50 text-red-800"
       : type === "info"
-        ? "border-cyan-200 bg-cyan-50 text-cyan-900"
-      : "border-emerald-200 bg-emerald-50 text-emerald-800";
+        ? "border-[#cfe58f] bg-[#eff8d6] text-[#315329]"
+      : "border-[#b9dfaa] bg-[#e8f7df] text-[#285b36]";
 
-  return <div className={"rounded-xl border px-4 py-3 text-sm font-medium " + styles}>{message}</div>;
+  return <div className={"rounded-2xl border px-4 py-3.5 text-sm font-bold leading-5 " + styles}>{message}</div>;
 }
 
 export default Alert;
