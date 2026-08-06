@@ -1,7 +1,6 @@
 import React from "react";
 import { useEffect, useMemo, useState } from "react";
 import Alert from "../components/Alert";
-import AppHeader from "../components/AppHeader";
 import { EyeIcon, EyeOffIcon } from "../components/EyeIcons";
 import Spinner from "../components/Spinner";
 import { APP_CONFIG } from "../constants/app";
@@ -43,10 +42,8 @@ interface AvatarProps {
   className?: string;
 }
 
-function Avatar({ name, avatarUrl, selected = false, className = "h-11 w-11" }: AvatarProps) {
-  const styles = `${className} flex shrink-0 items-center justify-center overflow-hidden rounded-xl text-sm font-black ${
-    selected ? "bg-cyan-700 text-white" : "bg-slate-100 text-slate-700"
-  }`;
+function Avatar({ name, avatarUrl, className = "h-11 w-11" }: AvatarProps) {
+  const styles = `${className} flex shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-[#e9eee4] text-sm font-extrabold text-[#17483f]`;
 
   if (avatarUrl) {
     return <img className={`${styles} object-cover`} src={avatarUrl} alt={`Foto de ${name}`} />;
@@ -230,79 +227,93 @@ function AccessScreen() {
   }, [ownRequestId]);
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,#cffafe,transparent_32%),radial-gradient(circle_at_bottom_right,#dbeafe,transparent_35%),linear-gradient(135deg,#f8fafc_0%,#eef2ff_52%,#ecfeff_100%)] px-4 py-5 sm:px-6 lg:px-8">
-      <section className="mx-auto w-full max-w-6xl">
-        <header className="flex flex-col gap-5 rounded-3xl border border-white/80 bg-white/75 p-5 shadow-xl shadow-slate-300/40 backdrop-blur sm:p-7 lg:flex-row lg:items-center lg:justify-between">
-          <AppHeader />
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <button
-              type="button"
-              className="shrink-0 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-700 transition hover:border-cyan-300 hover:text-cyan-800"
-              onClick={() => setHistoryOpen(true)}
-            >
-              Historico
-            </button>
-            <button
-              type="button"
-              className="shrink-0 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-700 transition hover:border-cyan-300 hover:text-cyan-800"
-              onClick={() => setManageOpen(true)}
-            >
-              Gerenciar pessoas
-            </button>
-            <button
-              type="button"
-              className="shrink-0 rounded-xl border border-cyan-200 bg-cyan-50 px-5 py-3 text-sm font-bold text-cyan-900 transition hover:border-cyan-400 hover:bg-cyan-100"
-              onClick={() => setRegisterOpen(true)}
-            >
-              Cadastrar pessoa
-            </button>
-          </div>
-        </header>
-
-        <div className="mt-5 grid gap-5 lg:grid-cols-[1fr_340px]">
-          <section className="rounded-3xl border border-white/80 bg-white/90 p-5 shadow-xl shadow-slate-300/40 sm:p-7">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-700">Identificação</p>
-                <h2 className="mt-2 text-2xl font-black text-slate-950">Selecione seu nome</h2>
-                <p className="mt-1 text-sm text-slate-500">Seu e-mail nunca aparece nesta lista.</p>
+    <main className="min-h-screen overflow-hidden bg-[#f1f4e9] text-[#153f36]">
+      <section className="border-b border-[#dddcd2] bg-[#f8f7ef] text-[#153f36]">
+        <div className="relative mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+          <nav className="flex flex-col gap-5 py-5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl bg-[#b7f50d] p-2 shadow-lg shadow-black/10">
+                <img src="/assets/app-logo.png" alt="" className="h-full w-full object-contain" />
               </div>
-              <label className="block sm:w-64">
+              <div>
+                <p className="text-base font-extrabold tracking-tight">{APP_CONFIG.appName}</p>
+                <p className="text-xs text-[#6c8079]">Central de códigos</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2 sm:flex sm:items-center">
+              <button
+                type="button"
+                className="rounded-full border border-[#d5d8cd] px-3 py-2.5 text-xs font-bold text-[#31584d] transition hover:border-[#a9b6a6] hover:bg-white sm:px-5 sm:text-sm"
+                onClick={() => setHistoryOpen(true)}
+              >
+                Histórico
+              </button>
+              <button
+                type="button"
+                className="rounded-full border border-[#d5d8cd] px-3 py-2.5 text-xs font-bold text-[#31584d] transition hover:border-[#a9b6a6] hover:bg-white sm:px-5 sm:text-sm"
+                onClick={() => setManageOpen(true)}
+              >
+                Pessoas
+              </button>
+              <button
+                type="button"
+                className="rounded-full bg-[#153f36] px-3 py-2.5 text-xs font-extrabold text-white transition hover:bg-[#21584c] sm:px-5 sm:text-sm"
+                onClick={() => setRegisterOpen(true)}
+              >
+                + Cadastrar
+              </button>
+            </div>
+          </nav>
+
+        </div>
+      </section>
+
+      <section className="relative mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8 lg:py-14">
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+          <section className="rounded-[32px] bg-white p-5 shadow-[0_24px_70px_rgba(21,63,54,0.08)] sm:p-8">
+            <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+              <div>
+                <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-[#578077]">Quem vai receber?</p>
+                <h2 className="mt-2 text-3xl font-extrabold tracking-[-0.035em] text-[#153f36]">Escolha seu nome</h2>
+                <p className="mt-2 text-sm text-[#6d817a]">O e-mail cadastrado permanece sempre privado.</p>
+              </div>
+              <label className="relative block md:w-72">
                 <span className="sr-only">Buscar nome</span>
+                <svg className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#769087]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                  <circle cx="11" cy="11" r="7" />
+                  <path d="m20 20-3.2-3.2" />
+                </svg>
                 <input
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-100"
+                  className="w-full rounded-2xl border border-[#dce3d8] bg-[#f5f7f1] py-3.5 pl-12 pr-4 text-sm font-semibold text-[#153f36] outline-none transition placeholder:text-[#92a199] focus:border-[#8dbe16] focus:bg-white focus:ring-4 focus:ring-[#b7f50d]/20"
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
-                  placeholder="Buscar nome..."
+                  placeholder="Buscar pessoa..."
                 />
               </label>
             </div>
 
-            <div className="mt-6">
+            <div className="mt-7">
               {loading ? (
-                <div className="flex min-h-64 items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 text-slate-600">
-                  <Spinner className="h-5 w-5 border-cyan-700" />
-                  <span className="font-semibold">Carregando pessoas...</span>
+                <div className="flex min-h-72 items-center justify-center gap-3 rounded-3xl bg-[#f5f7f1] text-[#688078]">
+                  <Spinner className="h-5 w-5 border-[#2a5b50]" />
+                  <span className="font-bold">Carregando pessoas...</span>
                 </div>
               ) : users.length === 0 ? (
-                <div className="min-h-64 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
-                  <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-cyan-100 text-xl font-black text-cyan-800">+</div>
-                  <h3 className="mt-4 text-lg font-bold text-slate-900">Nenhuma pessoa cadastrada</h3>
-                  <p className="mt-2 text-sm text-slate-500">Cadastre a primeira pessoa para começar.</p>
-                  <button
-                    type="button"
-                    className="mt-5 rounded-xl bg-slate-950 px-5 py-3 text-sm font-bold text-white transition hover:bg-slate-800"
-                    onClick={() => setRegisterOpen(true)}
-                  >
+                <div className="min-h-72 rounded-3xl border border-dashed border-[#b9c8bc] bg-[#f5f7f1] p-10 text-center">
+                  <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-[#b7f50d] text-2xl font-black text-[#153f36]">+</div>
+                  <h3 className="mt-5 text-xl font-extrabold text-[#153f36]">Nenhuma pessoa cadastrada</h3>
+                  <p className="mt-2 text-sm text-[#71837d]">Cadastre a primeira pessoa para começar.</p>
+                  <button type="button" className="mt-6 rounded-full bg-[#153f36] px-6 py-3 text-sm font-extrabold text-white transition hover:bg-[#21584c]" onClick={() => setRegisterOpen(true)}>
                     Cadastrar pessoa
                   </button>
                 </div>
               ) : filteredUsers.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-sm font-semibold text-slate-600">
+                <div className="rounded-3xl border border-dashed border-[#b9c8bc] bg-[#f5f7f1] p-10 text-center text-sm font-bold text-[#688078]">
                   Nenhum nome encontrado.
                 </div>
               ) : (
-                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {filteredUsers.map((user) => {
                     const selected = user.id === selectedUserId;
                     const waiting = user.id === currentRequest?.userId;
@@ -310,19 +321,22 @@ function AccessScreen() {
                       <button
                         type="button"
                         key={user.id}
-                        className={`relative flex min-h-24 items-center gap-3 rounded-2xl border p-4 text-left transition ${
+                        className={`group relative flex min-h-24 items-center gap-3 rounded-2xl border p-4 text-left transition duration-200 ${
                           selected
-                            ? "border-cyan-500 bg-cyan-50 ring-4 ring-cyan-100"
-                            : "border-slate-200 bg-white hover:border-cyan-300 hover:bg-cyan-50/40"
+                            ? "border-[#153f36] bg-[#153f36] text-white shadow-lg shadow-[#153f36]/15"
+                            : "border-[#e0e5dc] bg-[#f8f9f5] text-[#153f36] hover:-translate-y-0.5 hover:border-[#9bbd64] hover:bg-white hover:shadow-md"
                         }`}
                         onClick={() => setSelectedUserId(user.id)}
                       >
-                        <Avatar name={user.name} avatarUrl={user.avatarUrl} selected={selected} />
-                        <span className="min-w-0">
-                          <span className="block truncate font-bold text-slate-950">{user.name}</span>
-                          <span className={`mt-1 block text-xs font-semibold ${waiting ? "text-amber-700" : "text-slate-400"}`}>
-                            {waiting ? "Aguardando codigo" : selected ? "Selecionado" : "Selecionar"}
+                        <Avatar name={user.name} avatarUrl={user.avatarUrl} selected={selected} className="h-12 w-12" />
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate font-extrabold">{user.name}</span>
+                          <span className={`mt-1 block text-xs font-bold ${waiting ? "text-[#b7f50d]" : selected ? "text-white/55" : "text-[#87978f]"}`}>
+                            {waiting ? "Código solicitado" : selected ? "Perfil selecionado" : "Selecionar perfil"}
                           </span>
+                        </span>
+                        <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs font-black ${selected ? "border-[#b7f50d] bg-[#b7f50d] text-[#153f36]" : "border-[#cdd7ce] text-transparent group-hover:border-[#8eac65]"}`}>
+                          ✓
                         </span>
                       </button>
                     );
@@ -331,78 +345,98 @@ function AccessScreen() {
               )}
             </div>
 
-            <div className="mt-6 space-y-4 border-t border-slate-200 pt-6">
-              <Alert type={messageType} message={message} />
-              <button
-                type="button"
-                className="flex min-h-14 w-full items-center justify-center gap-3 rounded-2xl bg-cyan-700 px-5 py-4 text-base font-black text-white shadow-lg shadow-cyan-700/20 transition hover:bg-cyan-800 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none"
-                disabled={!selectedUser || requesting || requestActive}
-                onClick={() => void handleRequest()}
-              >
-                {requesting && <Spinner />}
-                {requesting
-                  ? "Solicitando..."
-                  : requestActive
-                    ? selectedUserWaiting
-                      ? "Procurando codigo"
-                      : `${currentRequest?.userName} esta na vez`
-                    : selectedUser
-                      ? `Enviar codigo para ${selectedUser.name}`
-                      : "Selecione seu nome"}
-              </button>
+            <div className="mt-7 rounded-3xl bg-[#f3f6ed] p-4 sm:p-5">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
+                  <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-[#72877f]">Selecionado</p>
+                  <p className="mt-1 truncate text-lg font-extrabold text-[#153f36]">{selectedUser?.name || "Nenhum perfil"}</p>
+                </div>
+                <button
+                  type="button"
+                  className="flex min-h-14 w-full items-center justify-center gap-3 rounded-full bg-[#b7f50d] px-7 py-4 text-sm font-extrabold text-[#153f36] shadow-lg shadow-[#7ca800]/15 transition hover:bg-[#c9ff30] disabled:cursor-not-allowed disabled:bg-[#dce3d7] disabled:text-[#8b9b94] disabled:shadow-none sm:w-auto"
+                  disabled={!selectedUser || requesting || requestActive}
+                  onClick={() => void handleRequest()}
+                >
+                  {requesting && <Spinner className="h-5 w-5 border-[#153f36]" />}
+                  {requesting
+                    ? "Solicitando..."
+                    : requestActive
+                      ? selectedUserWaiting
+                        ? "Procurando código"
+                        : `${currentRequest?.userName} está na vez`
+                      : selectedUser
+                        ? "Enviar código por e-mail"
+                        : "Selecione seu nome"}
+                  {!requesting && <span aria-hidden="true">→</span>}
+                </button>
+              </div>
             </div>
           </section>
 
-          <aside className="rounded-3xl bg-slate-950 p-5 text-white shadow-xl shadow-slate-400/30 sm:p-7">
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-300">Status agora</p>
-            {currentRequest ? (
-              <div className="mt-6">
-                <div className="rounded-2xl border border-amber-300/20 bg-amber-300/10 p-5">
-                  <div className="flex items-center gap-3">
-                    <span className="relative flex h-3 w-3">
-                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-300 opacity-75" />
-                      <span className="relative inline-flex h-3 w-3 rounded-full bg-amber-300" />
-                    </span>
-                    <span className="text-sm font-bold text-amber-100">
-                      {currentRequest.status === "processing" ? "Enviando por e-mail" : "Procurando codigo"}
-                    </span>
-                  </div>
-                  <p className="mt-5 text-2xl font-black">{currentRequest.userName}</p>
-                  <p className="mt-1 text-sm text-slate-300">esta na vez no momento.</p>
-                  <div className="mt-5 rounded-xl bg-slate-950/50 p-4">
-                    <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Tempo restante</p>
-                    <p className="mt-1 font-mono text-3xl font-black text-white">
-                      {formatRemaining(currentRequest.expiresAt, now)}
-                    </p>
-                  </div>
+          <aside className="space-y-6">
+            <div className="relative overflow-hidden rounded-[32px] bg-[#153f36] p-6 text-white shadow-[0_24px_70px_rgba(21,63,54,0.16)] sm:p-7">
+              <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full border border-[#b7f50d]/20" />
+              <div className="relative">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-white/50">Status agora</p>
+                  <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-extrabold ${currentRequest ? "bg-amber-300/15 text-amber-200" : "bg-[#b7f50d] text-[#153f36]"}`}>
+                    <span className={`h-2 w-2 rounded-full ${currentRequest ? "animate-pulse bg-amber-300" : "bg-[#153f36]"}`} />
+                    {currentRequest ? "Em andamento" : "Disponível"}
+                  </span>
                 </div>
-                {currentRequest.userId !== selectedUserId && (
-                  <p className="mt-4 text-sm leading-6 text-slate-400">
-                    Quando esta solicitação terminar, outra pessoa poderá pedir o próximo código.
-                  </p>
+
+                {currentRequest ? (
+                  <div className="mt-7">
+                    <p className="text-sm font-bold text-white/55">Vez reservada para</p>
+                    <p className="mt-1.5 text-2xl font-extrabold tracking-[-0.035em]">{currentRequest.userName}</p>
+                    <p className="mt-1.5 text-sm leading-5 text-white/55">
+                      {currentRequest.status === "processing" ? "O código está sendo enviado por e-mail." : "Estamos procurando o código mais recente."}
+                    </p>
+                    <div className="mt-5 flex items-center justify-between gap-4 rounded-3xl bg-white/[0.07] px-5 py-4">
+                      <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-white/45">Tempo restante</p>
+                      <p className="font-mono text-3xl font-black tracking-tight text-[#b7f50d]">{formatRemaining(currentRequest.expiresAt, now)}</p>
+                    </div>
+                    {currentRequest.userId !== selectedUserId && (
+                      <p className="mt-5 text-xs leading-5 text-white/45">Quando esta solicitação terminar, outra pessoa poderá pedir o próximo código.</p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="mt-9">
+                    <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#b7f50d] text-2xl font-black text-[#153f36]">✓</div>
+                    <p className="mt-6 text-3xl font-extrabold leading-tight tracking-[-0.035em]">Tudo livre por aqui.</p>
+                    <p className="mt-3 text-sm leading-6 text-white/55">Escolha seu nome para reservar a próxima entrega por até 5 minutos.</p>
+                  </div>
                 )}
               </div>
-            ) : (
-              <div className="mt-6 rounded-2xl border border-emerald-300/20 bg-emerald-300/10 p-5">
-                <div className="flex items-center gap-3">
-                  <span className="h-3 w-3 rounded-full bg-emerald-300" />
-                  <span className="text-sm font-bold text-emerald-100">Disponível</span>
-                </div>
-                <p className="mt-5 text-2xl font-black">Ninguém está aguardando</p>
-                <p className="mt-2 text-sm leading-6 text-slate-300">Selecione seu nome para reservar a vez por até 5 minutos.</p>
-              </div>
-            )}
-
-            <div className="mt-6 space-y-3 border-t border-white/10 pt-6 text-sm text-slate-300">
-              <p><strong className="text-white">1.</strong> No ChatGPT, solicite o código por e-mail.</p>
-              <p><strong className="text-white">2.</strong> Selecione seu nome aqui.</p>
-              <p><strong className="text-white">3.</strong> Clique em enviar código.</p>
-              <p><strong className="text-white">4.</strong> Confira seu e-mail pessoal.</p>
             </div>
 
+            <div className="rounded-[32px] border border-[#dce4d8] bg-[#e5f1d1] p-6 sm:p-7">
+              <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-[#567164]">Passo a passo</p>
+              <div className="mt-5 space-y-4">
+                {[
+                  "Solicite o código por e-mail no ChatGPT.",
+                  "Escolha seu nome na lista ao lado.",
+                  "Envie e acompanhe o status em tempo real.",
+                  "Confira seu e-mail pessoal.",
+                ].map((step, index) => (
+                  <div className="flex gap-3" key={step}>
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#153f36] text-xs font-black text-[#b7f50d]">{index + 1}</span>
+                    <p className="pt-1 text-sm font-bold leading-5 text-[#31584d]">{step}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
           </aside>
         </div>
       </section>
+
+      {message && (
+        <div className="pointer-events-none fixed inset-x-4 bottom-4 z-40 mx-auto max-w-md sm:inset-x-auto sm:bottom-6 sm:right-6 sm:w-full">
+          <div className="pointer-events-auto shadow-xl shadow-[#153f36]/10">
+            <Alert type={messageType} message={message} />
+          </div>
+        </div>
+      )}
 
       {historyOpen && <RequestHistoryModal onClose={() => setHistoryOpen(false)} />}
       {registerOpen && (
@@ -464,28 +498,28 @@ function RequestHistoryModal({ onClose }: RequestHistoryModalProps) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/65 px-4 py-6 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[#082d27]/80 px-4 py-6 backdrop-blur-md"
       onClick={onClose}
       role="presentation"
     >
       <div
-        className="max-h-[88vh] w-full max-w-2xl overflow-hidden rounded-3xl bg-white shadow-2xl"
+        className="max-h-[88vh] w-full max-w-2xl overflow-hidden rounded-[32px] bg-[#f5f7f1] shadow-2xl shadow-black/30"
         onClick={(event) => event.stopPropagation()}
         role="dialog"
         aria-modal="true"
         aria-labelledby="request-history-title"
       >
-        <div className="flex items-start justify-between gap-4 border-b border-slate-200 px-5 py-5 sm:px-7">
+        <div className="flex items-start justify-between gap-4 bg-[#153f36] px-5 py-6 text-white sm:px-7">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-700">Historico</p>
-            <h2 id="request-history-title" className="mt-2 text-2xl font-black text-slate-950">
-              Ultimas solicitacoes
+            <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-[#b7f50d]">Histórico</p>
+            <h2 id="request-history-title" className="mt-2 text-2xl font-extrabold tracking-tight">
+              Últimas solicitações
             </h2>
-            <p className="mt-1 text-sm text-slate-500">Somente a pessoa e a data sao exibidas.</p>
+            <p className="mt-1 text-sm text-white/55">Somente a pessoa e a data são exibidas.</p>
           </div>
           <button
             type="button"
-            className="shrink-0 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-bold text-slate-600 transition hover:bg-slate-100"
+            className="shrink-0 rounded-full border border-white/15 px-4 py-2.5 text-sm font-extrabold text-white/75 transition hover:bg-white/10 hover:text-white"
             onClick={onClose}
           >
             Fechar
@@ -494,30 +528,30 @@ function RequestHistoryModal({ onClose }: RequestHistoryModalProps) {
 
         <div className="max-h-[62vh] min-h-64 overflow-y-auto p-5 sm:p-7" aria-live="polite">
           {loading ? (
-            <div className="flex min-h-52 items-center justify-center gap-3 rounded-2xl bg-slate-50 text-slate-600">
-              <Spinner className="h-5 w-5 border-cyan-700" />
-              <span className="font-semibold">Carregando historico...</span>
+            <div className="flex min-h-52 items-center justify-center gap-3 rounded-3xl bg-[#e9eee4] text-[#597168]">
+              <Spinner className="h-5 w-5 border-[#153f36]" />
+              <span className="font-bold">Carregando histórico...</span>
             </div>
           ) : error ? (
             <Alert type="error" message={error} />
           ) : requests.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
-              <p className="font-semibold text-slate-900">Nenhuma solicitacao registrada.</p>
+            <div className="rounded-3xl border border-dashed border-[#b9c8bc] bg-[#e9eee4] p-8 text-center">
+              <p className="font-bold text-[#153f36]">Nenhuma solicitação registrada.</p>
             </div>
           ) : (
             <div className="space-y-3">
               {requests.map((item, index) => (
                 <div
-                  className="flex items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4"
+                  className="flex items-center justify-between gap-4 rounded-2xl border border-[#dce4d8] bg-white p-4 transition hover:border-[#9ab36a]"
                   key={`${item.userName}-${item.requestedAt}-${index}`}
                 >
                   <div className="min-w-0">
-                    <p className="truncate font-bold text-slate-950">{item.userName}</p>
-                    <time className="mt-1 block text-sm text-slate-500" dateTime={item.requestedAt}>
+                    <p className="truncate font-extrabold text-[#153f36]">{item.userName}</p>
+                    <time className="mt-1 block text-sm font-semibold text-[#789087]" dateTime={item.requestedAt}>
                       {formatDateTime(item.requestedAt)}
                     </time>
                   </div>
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-cyan-100 text-sm font-black text-cyan-800">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#b7f50d] text-sm font-black text-[#153f36]">
                     {index + 1}
                   </span>
                 </div>
@@ -580,54 +614,54 @@ function RegisterModal({ onClose, onRegistered }: RegisterModalProps) {
   }, [onClose]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/65 px-4 py-6 backdrop-blur-sm" onClick={onClose}>
-      <div className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-3xl bg-white p-5 shadow-2xl sm:p-7" onClick={(event) => event.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="register-title">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#082d27]/80 px-4 py-6 backdrop-blur-md" onClick={onClose}>
+      <div className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-[32px] bg-[#f7f8f3] p-5 shadow-2xl shadow-black/30 sm:p-7" onClick={(event) => event.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="register-title">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-700">Novo cadastro</p>
-            <h2 id="register-title" className="mt-2 text-2xl font-black text-slate-950">Cadastrar pessoa</h2>
-            <p className="mt-2 text-sm leading-6 text-slate-500">O e-mail será usado somente para enviar o código solicitado.</p>
+            <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-[#638076]">Novo cadastro</p>
+            <h2 id="register-title" className="mt-2 text-3xl font-extrabold tracking-[-0.035em] text-[#153f36]">Cadastrar pessoa</h2>
+            <p className="mt-2 text-sm leading-6 text-[#6e837b]">O e-mail será usado somente para enviar o código solicitado.</p>
           </div>
-          <button type="button" className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-bold text-slate-600 hover:bg-slate-100" onClick={onClose}>Fechar</button>
+          <button type="button" className="rounded-full border border-[#d8e0d5] bg-white px-4 py-2.5 text-sm font-extrabold text-[#5f746c] transition hover:border-[#9db276] hover:text-[#153f36]" onClick={onClose}>Fechar</button>
         </div>
 
         <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
           <Alert type="error" message={error} />
-          <div className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+          <div className="flex items-center gap-4 rounded-3xl border border-[#dce4d8] bg-[#e9eee4] p-4">
             <Avatar name={name || "Nova pessoa"} avatarUrl={avatarDataUrl} className="h-16 w-16" />
             <div className="min-w-0 flex-1">
-              <label className="inline-flex cursor-pointer rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 transition hover:border-cyan-400 hover:text-cyan-800">
+              <label className="inline-flex cursor-pointer rounded-full border border-[#c9d4ca] bg-white px-4 py-2.5 text-sm font-extrabold text-[#31584d] transition hover:border-[#91ad60]">
                 Escolher foto
                 <input className="sr-only" type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => void handleAvatarFile(event.target.files?.[0])} />
               </label>
-              <p className="mt-2 text-xs text-slate-500">Opcional. JPG, PNG ou WebP.</p>
+              <p className="mt-2 text-xs text-[#71867e]">Opcional. JPG, PNG ou WebP.</p>
             </div>
             {avatarDataUrl && (
               <button type="button" className="text-xs font-bold text-red-600 hover:text-red-800" onClick={() => setAvatarDataUrl("")}>Remover</button>
             )}
           </div>
           <label className="block">
-            <span className="text-sm font-bold text-slate-700">Nome</span>
-            <input className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100" value={name} onChange={(event) => setName(event.target.value)} placeholder="Nome que aparecerá na lista" autoComplete="name" required />
+            <span className="text-sm font-extrabold text-[#31584d]">Nome</span>
+            <input className="mt-2 w-full rounded-2xl border border-[#d5ded4] bg-white px-4 py-3.5 text-[#153f36] outline-none transition focus:border-[#8dae35] focus:ring-4 focus:ring-[#b7f50d]/20" value={name} onChange={(event) => setName(event.target.value)} placeholder="Nome que aparecerá na lista" autoComplete="name" required />
           </label>
           <label className="block">
-            <span className="text-sm font-bold text-slate-700">E-mail pessoal</span>
-            <input className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100" type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="nome@exemplo.com" autoComplete="email" required />
+            <span className="text-sm font-extrabold text-[#31584d]">E-mail pessoal</span>
+            <input className="mt-2 w-full rounded-2xl border border-[#d5ded4] bg-white px-4 py-3.5 text-[#153f36] outline-none transition focus:border-[#8dae35] focus:ring-4 focus:ring-[#b7f50d]/20" type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="nome@exemplo.com" autoComplete="email" required />
           </label>
 
-          <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
-            <p className="text-sm font-bold text-amber-950">Confirmação administrativa</p>
-            <p className="mt-1 text-xs leading-5 text-amber-800">Necessária somente para salvar um novo cadastro.</p>
+          <div className="rounded-3xl bg-[#153f36] p-5 text-white">
+            <p className="text-sm font-extrabold">Confirmação administrativa</p>
+            <p className="mt-1 text-xs leading-5 text-white/50">Necessária somente para salvar um novo cadastro.</p>
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
               <label className="block">
-                <span className="text-sm font-bold text-slate-700">Usuário</span>
-                <input className="mt-2 w-full rounded-xl border border-amber-200 bg-white px-4 py-3 outline-none transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100" value={username} onChange={(event) => setUsername(event.target.value)} autoComplete="username" required />
+                <span className="text-sm font-bold text-white/70">Usuário</span>
+                <input className="mt-2 w-full rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-white outline-none transition focus:border-[#b7f50d] focus:ring-4 focus:ring-[#b7f50d]/15" value={username} onChange={(event) => setUsername(event.target.value)} autoComplete="username" required />
               </label>
               <label className="block">
-                <span className="text-sm font-bold text-slate-700">Senha</span>
+                <span className="text-sm font-bold text-white/70">Senha</span>
                 <span className="relative mt-2 block">
-                  <input className="w-full rounded-xl border border-amber-200 bg-white px-4 py-3 pr-12 outline-none transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100" type={showPassword ? "text" : "password"} value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" required />
-                  <button type="button" className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg p-2 text-slate-500 hover:bg-slate-100" onClick={() => setShowPassword((current) => !current)} aria-label={showPassword ? "Ocultar senha" : "Exibir senha"}>
+                  <input className="w-full rounded-2xl border border-white/10 bg-white/10 px-4 py-3 pr-12 text-white outline-none transition focus:border-[#b7f50d] focus:ring-4 focus:ring-[#b7f50d]/15" type={showPassword ? "text" : "password"} value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" required />
+                  <button type="button" className="absolute right-2 top-1/2 -translate-y-1/2 rounded-xl p-2 text-white/55 hover:bg-white/10 hover:text-white" onClick={() => setShowPassword((current) => !current)} aria-label={showPassword ? "Ocultar senha" : "Exibir senha"}>
                     {showPassword ? <EyeOffIcon /> : <EyeIcon />}
                   </button>
                 </span>
@@ -635,8 +669,8 @@ function RegisterModal({ onClose, onRegistered }: RegisterModalProps) {
             </div>
           </div>
 
-          <button type="submit" disabled={loading} className="flex min-h-[52px] w-full items-center justify-center gap-3 rounded-xl bg-slate-950 px-5 py-3.5 font-black text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300">
-            {loading && <Spinner />}
+          <button type="submit" disabled={loading} className="flex min-h-[54px] w-full items-center justify-center gap-3 rounded-full bg-[#b7f50d] px-6 py-4 font-extrabold text-[#153f36] transition hover:bg-[#c9ff30] disabled:cursor-not-allowed disabled:bg-[#dce3d7] disabled:text-[#8b9b94]">
+            {loading && <Spinner className="h-5 w-5 border-[#153f36]" />}
             {loading ? "Salvando..." : "Salvar cadastro"}
           </button>
         </form>
@@ -760,59 +794,59 @@ function ManageUsersModal({ onClose, onUpdated }: ManageUsersModalProps) {
   }, [token]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/65 px-4 py-6 backdrop-blur-sm" onClick={() => void closeModal()}>
-      <div className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-3xl bg-white p-5 shadow-2xl sm:p-7" onClick={(event) => event.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="manage-title">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#082d27]/80 px-4 py-6 backdrop-blur-md" onClick={() => void closeModal()}>
+      <div className="max-h-[92vh] w-full max-w-4xl overflow-y-auto rounded-[32px] bg-[#f7f8f3] p-5 shadow-2xl shadow-black/30 sm:p-7" onClick={(event) => event.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="manage-title">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-700">Área protegida</p>
-            <h2 id="manage-title" className="mt-2 text-2xl font-black text-slate-950">Gerenciar pessoas</h2>
-            <p className="mt-2 text-sm text-slate-500">Confirme o acesso administrativo para visualizar e editar os dados.</p>
+            <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-[#638076]">Área protegida</p>
+            <h2 id="manage-title" className="mt-2 text-3xl font-extrabold tracking-[-0.035em] text-[#153f36]">Gerenciar pessoas</h2>
+            <p className="mt-2 text-sm text-[#6e837b]">Confirme o acesso administrativo para visualizar e editar os dados.</p>
           </div>
-          <button type="button" className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-bold text-slate-600 hover:bg-slate-100" onClick={() => void closeModal()}>Fechar</button>
+          <button type="button" className="rounded-full border border-[#d8e0d5] bg-white px-4 py-2.5 text-sm font-extrabold text-[#5f746c] transition hover:border-[#9db276] hover:text-[#153f36]" onClick={() => void closeModal()}>Fechar</button>
         </div>
 
         {!token ? (
-          <form className="mt-6 space-y-4" onSubmit={handleLogin}>
+          <form className="mx-auto mt-8 max-w-xl space-y-5 rounded-[28px] bg-[#e9eee4] p-5 sm:p-7" onSubmit={handleLogin}>
             <Alert type="error" message={error} />
             <label className="block">
-              <span className="text-sm font-bold text-slate-700">Usuário administrativo</span>
-              <input className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 outline-none transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100" value={username} onChange={(event) => setUsername(event.target.value)} autoComplete="username" required />
+              <span className="text-sm font-extrabold text-[#31584d]">Usuário administrativo</span>
+              <input className="mt-2 w-full rounded-2xl border border-[#d2dcd1] bg-white px-4 py-3.5 text-[#153f36] outline-none transition focus:border-[#8dae35] focus:ring-4 focus:ring-[#b7f50d]/20" value={username} onChange={(event) => setUsername(event.target.value)} autoComplete="username" required />
             </label>
             <label className="block">
-              <span className="text-sm font-bold text-slate-700">Senha administrativa</span>
+              <span className="text-sm font-extrabold text-[#31584d]">Senha administrativa</span>
               <span className="relative mt-2 block">
-                <input className="w-full rounded-xl border border-slate-300 px-4 py-3 pr-12 outline-none transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100" type={showPassword ? "text" : "password"} value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" required />
-                <button type="button" className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg p-2 text-slate-500 hover:bg-slate-100" onClick={() => setShowPassword((current) => !current)} aria-label={showPassword ? "Ocultar senha" : "Exibir senha"}>
+                <input className="w-full rounded-2xl border border-[#d2dcd1] bg-white px-4 py-3.5 pr-12 text-[#153f36] outline-none transition focus:border-[#8dae35] focus:ring-4 focus:ring-[#b7f50d]/20" type={showPassword ? "text" : "password"} value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" required />
+                <button type="button" className="absolute right-2 top-1/2 -translate-y-1/2 rounded-xl p-2 text-[#74887f] hover:bg-[#edf2e9] hover:text-[#153f36]" onClick={() => setShowPassword((current) => !current)} aria-label={showPassword ? "Ocultar senha" : "Exibir senha"}>
                   {showPassword ? <EyeOffIcon /> : <EyeIcon />}
                 </button>
               </span>
             </label>
-            <button type="submit" disabled={loading} className="flex min-h-[52px] w-full items-center justify-center gap-3 rounded-xl bg-slate-950 px-5 py-3.5 font-black text-white transition hover:bg-slate-800 disabled:bg-slate-300">
-              {loading && <Spinner />}
+            <button type="submit" disabled={loading} className="flex min-h-[54px] w-full items-center justify-center gap-3 rounded-full bg-[#153f36] px-6 py-4 font-extrabold text-white transition hover:bg-[#21584c] disabled:bg-[#cfd8ce] disabled:text-[#8a9a93]">
+              {loading && <Spinner className="h-5 w-5 border-[#b7f50d]" />}
               {loading ? "Confirmando..." : "Visualizar dados"}
             </button>
           </form>
         ) : (
-          <div className="mt-6 grid gap-5 md:grid-cols-[220px_1fr]">
-            <div className="space-y-2">
+          <div className="mt-8 grid gap-5 md:grid-cols-[240px_1fr]">
+            <div className="max-h-[58vh] space-y-2 overflow-y-auto rounded-[28px] bg-[#e9eee4] p-3">
               {users.map((user) => (
-                <button key={user.id} type="button" className={`flex w-full items-center gap-3 rounded-xl border p-3 text-left transition ${selectedId === user.id ? "border-cyan-500 bg-cyan-50" : "border-slate-200 hover:border-cyan-300"}`} onClick={() => selectUser(user)}>
+                <button key={user.id} type="button" className={`flex w-full items-center gap-3 rounded-2xl border p-3 text-left transition ${selectedId === user.id ? "border-[#153f36] bg-[#153f36] text-white shadow-md" : "border-transparent bg-white text-[#153f36] hover:border-[#9db276]"}`} onClick={() => selectUser(user)}>
                   <Avatar name={user.name} avatarUrl={user.avatarUrl} selected={selectedId === user.id} />
                   <span className="min-w-0">
-                    <span className="block truncate text-sm font-bold text-slate-900">{user.name}</span>
-                    <span className="block truncate text-xs text-slate-500">{user.email}</span>
+                    <span className="block truncate text-sm font-extrabold">{user.name}</span>
+                    <span className={`block truncate text-xs ${selectedId === user.id ? "text-white/50" : "text-[#74887f]"}`}>{user.email}</span>
                   </span>
                 </button>
               ))}
             </div>
 
             {selectedUser && (
-              <form className="space-y-4 rounded-2xl border border-slate-200 bg-slate-50 p-4" onSubmit={handleSave}>
+              <form className="space-y-5 rounded-[28px] border border-[#dce4d8] bg-white p-5 sm:p-6" onSubmit={handleSave}>
                 <Alert type="error" message={error} />
                 <Alert type="success" message={message} />
                 <div className="flex flex-wrap items-center gap-4">
                   <Avatar name={name || selectedUser.name} avatarUrl={avatarPreview} className="h-20 w-20" />
-                  <label className="cursor-pointer rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 hover:border-cyan-400">
+                  <label className="cursor-pointer rounded-full border border-[#ccd7cc] bg-[#f5f7f1] px-4 py-2.5 text-sm font-extrabold text-[#31584d] transition hover:border-[#91ad60]">
                     Trocar foto
                     <input className="sr-only" type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => void handleAvatarFile(event.target.files?.[0])} />
                   </label>
@@ -821,15 +855,15 @@ function ManageUsersModal({ onClose, onUpdated }: ManageUsersModalProps) {
                   )}
                 </div>
                 <label className="block">
-                  <span className="text-sm font-bold text-slate-700">Nome</span>
-                  <input className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100" value={name} onChange={(event) => setName(event.target.value)} required />
+                  <span className="text-sm font-extrabold text-[#31584d]">Nome</span>
+                  <input className="mt-2 w-full rounded-2xl border border-[#d5ded4] bg-[#f8f9f5] px-4 py-3.5 text-[#153f36] outline-none transition focus:border-[#8dae35] focus:bg-white focus:ring-4 focus:ring-[#b7f50d]/20" value={name} onChange={(event) => setName(event.target.value)} required />
                 </label>
                 <label className="block">
-                  <span className="text-sm font-bold text-slate-700">E-mail</span>
-                  <input className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100" type="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
+                  <span className="text-sm font-extrabold text-[#31584d]">E-mail</span>
+                  <input className="mt-2 w-full rounded-2xl border border-[#d5ded4] bg-[#f8f9f5] px-4 py-3.5 text-[#153f36] outline-none transition focus:border-[#8dae35] focus:bg-white focus:ring-4 focus:ring-[#b7f50d]/20" type="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
                 </label>
-                <button type="submit" disabled={loading} className="flex min-h-[52px] w-full items-center justify-center gap-3 rounded-xl bg-cyan-700 px-5 py-3.5 font-black text-white transition hover:bg-cyan-800 disabled:bg-slate-300">
-                  {loading && <Spinner />}
+                <button type="submit" disabled={loading} className="flex min-h-[54px] w-full items-center justify-center gap-3 rounded-full bg-[#b7f50d] px-6 py-4 font-extrabold text-[#153f36] transition hover:bg-[#c9ff30] disabled:bg-[#dce3d7] disabled:text-[#8b9b94]">
+                  {loading && <Spinner className="h-5 w-5 border-[#153f36]" />}
                   {loading ? "Salvando..." : "Salvar alterações"}
                 </button>
               </form>
