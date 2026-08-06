@@ -254,7 +254,7 @@ function AccessScreen() {
                 className="rounded-full border border-[#d5d8cd] px-3 py-2.5 text-xs font-bold text-[#31584d] transition hover:border-[#a9b6a6] hover:bg-white sm:px-5 sm:text-sm"
                 onClick={() => setManageOpen(true)}
               >
-                Pessoas
+                Usuários
               </button>
               <button
                 type="button"
@@ -288,7 +288,7 @@ function AccessScreen() {
                   className="w-full rounded-2xl border border-[#dce3d8] bg-[#f5f7f1] py-3.5 pl-12 pr-4 text-sm font-semibold text-[#153f36] outline-none transition placeholder:text-[#92a199] focus:border-[#8dbe16] focus:bg-white focus:ring-4 focus:ring-[#b7f50d]/20"
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
-                  placeholder="Buscar pessoa..."
+                  placeholder="Buscar usuário..."
                 />
               </label>
             </div>
@@ -297,15 +297,15 @@ function AccessScreen() {
               {loading ? (
                 <div className="flex min-h-72 items-center justify-center gap-3 rounded-3xl bg-[#f5f7f1] text-[#688078]">
                   <Spinner className="h-5 w-5 border-[#2a5b50]" />
-                  <span className="font-bold">Carregando pessoas...</span>
+                  <span className="font-bold">Carregando usuários...</span>
                 </div>
               ) : users.length === 0 ? (
                 <div className="min-h-72 rounded-3xl border border-dashed border-[#b9c8bc] bg-[#f5f7f1] p-10 text-center">
                   <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-[#b7f50d] text-2xl font-black text-[#153f36]">+</div>
-                  <h3 className="mt-5 text-xl font-extrabold text-[#153f36]">Nenhuma pessoa cadastrada</h3>
-                  <p className="mt-2 text-sm text-[#71837d]">Cadastre a primeira pessoa para começar.</p>
+                  <h3 className="mt-5 text-xl font-extrabold text-[#153f36]">Nenhum usuário cadastrado</h3>
+                  <p className="mt-2 text-sm text-[#71837d]">Cadastre o primeiro usuário para começar.</p>
                   <button type="button" className="mt-6 rounded-full bg-[#153f36] px-6 py-3 text-sm font-extrabold text-white transition hover:bg-[#21584c]" onClick={() => setRegisterOpen(true)}>
-                    Cadastrar pessoa
+                    Cadastrar usuário
                   </button>
                 </div>
               ) : filteredUsers.length === 0 ? (
@@ -326,7 +326,7 @@ function AccessScreen() {
                             ? "border-[#153f36] bg-[#153f36] text-white shadow-lg shadow-[#153f36]/15"
                             : "border-[#e0e5dc] bg-[#f8f9f5] text-[#153f36] hover:-translate-y-0.5 hover:border-[#9bbd64] hover:bg-white hover:shadow-md"
                         }`}
-                        onClick={() => setSelectedUserId(user.id)}
+                        onClick={() => setSelectedUserId((current) => (current === user.id ? "" : user.id))}
                       >
                         <Avatar name={user.name} avatarUrl={user.avatarUrl} selected={selected} className="h-12 w-12" />
                         <span className="min-w-0 flex-1">
@@ -397,7 +397,7 @@ function AccessScreen() {
                       <p className="font-mono text-3xl font-black tracking-tight text-[#b7f50d]">{formatRemaining(currentRequest.expiresAt, now)}</p>
                     </div>
                     {currentRequest.userId !== selectedUserId && (
-                      <p className="mt-5 text-xs leading-5 text-white/45">Quando esta solicitação terminar, outra pessoa poderá pedir o próximo código.</p>
+                      <p className="mt-5 text-xs leading-5 text-white/45">Quando esta solicitação terminar, outro usuário poderá pedir o próximo código.</p>
                     )}
                   </div>
                 ) : (
@@ -515,7 +515,7 @@ function RequestHistoryModal({ onClose }: RequestHistoryModalProps) {
             <h2 id="request-history-title" className="mt-2 text-2xl font-extrabold tracking-tight">
               Últimas solicitações
             </h2>
-            <p className="mt-1 text-sm text-white/55">Somente a pessoa e a data são exibidas.</p>
+            <p className="mt-1 text-sm text-white/55">Somente o usuário e a data são exibidos.</p>
           </div>
           <button
             type="button"
@@ -619,7 +619,7 @@ function RegisterModal({ onClose, onRegistered }: RegisterModalProps) {
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-[#638076]">Novo cadastro</p>
-            <h2 id="register-title" className="mt-2 text-3xl font-extrabold tracking-[-0.035em] text-[#153f36]">Cadastrar pessoa</h2>
+            <h2 id="register-title" className="mt-2 text-3xl font-extrabold tracking-[-0.035em] text-[#153f36]">Cadastrar usuário</h2>
             <p className="mt-2 text-sm leading-6 text-[#6e837b]">O e-mail será usado somente para enviar o código solicitado.</p>
           </div>
           <button type="button" className="rounded-full border border-[#d8e0d5] bg-white px-4 py-2.5 text-sm font-extrabold text-[#5f746c] transition hover:border-[#9db276] hover:text-[#153f36]" onClick={onClose}>Fechar</button>
@@ -628,7 +628,7 @@ function RegisterModal({ onClose, onRegistered }: RegisterModalProps) {
         <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
           <Alert type="error" message={error} />
           <div className="flex items-center gap-4 rounded-3xl border border-[#dce4d8] bg-[#e9eee4] p-4">
-            <Avatar name={name || "Nova pessoa"} avatarUrl={avatarDataUrl} className="h-16 w-16" />
+            <Avatar name={name || "Novo usuário"} avatarUrl={avatarDataUrl} className="h-16 w-16" />
             <div className="min-w-0 flex-1">
               <label className="inline-flex cursor-pointer rounded-full border border-[#c9d4ca] bg-white px-4 py-2.5 text-sm font-extrabold text-[#31584d] transition hover:border-[#91ad60]">
                 Escolher foto
@@ -799,7 +799,7 @@ function ManageUsersModal({ onClose, onUpdated }: ManageUsersModalProps) {
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-[#638076]">Área protegida</p>
-            <h2 id="manage-title" className="mt-2 text-3xl font-extrabold tracking-[-0.035em] text-[#153f36]">Gerenciar pessoas</h2>
+            <h2 id="manage-title" className="mt-2 text-3xl font-extrabold tracking-[-0.035em] text-[#153f36]">Gerenciar usuários</h2>
             <p className="mt-2 text-sm text-[#6e837b]">Confirme o acesso administrativo para visualizar e editar os dados.</p>
           </div>
           <button type="button" className="rounded-full border border-[#d8e0d5] bg-white px-4 py-2.5 text-sm font-extrabold text-[#5f746c] transition hover:border-[#9db276] hover:text-[#153f36]" onClick={() => void closeModal()}>Fechar</button>
