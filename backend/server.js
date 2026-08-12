@@ -27,6 +27,7 @@ const {
 } = require("./services/request-observer");
 const {
   createUser,
+  deleteUser,
   getUserAvatar,
   listActiveUsers,
   listAdminUsers,
@@ -242,6 +243,27 @@ app.put("/api/admin/users/:userId", authMiddleware, async (req, res, next) => {
       });
     }
 
+    return next(err);
+  }
+});
+
+app.delete("/api/admin/users/:userId", authMiddleware, async (req, res, next) => {
+  if (!/^\d+$/.test(req.params.userId)) {
+    return res.status(400).json({ message: "Usuario invalido." });
+  }
+
+  try {
+    const user = await deleteUser(req.params.userId);
+
+    if (!user) {
+      return res.status(404).json({ message: "Usuario nao encontrado." });
+    }
+
+    return res.json({
+      deletedUserId: String(user.id),
+      message: `${user.name} foi excluido com sucesso.`,
+    });
+  } catch (err) {
     return next(err);
   }
 });
