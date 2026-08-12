@@ -98,6 +98,7 @@ npm run gmail:check
 - `GET /api/users/:userId/avatar`: entrega a foto publica do usuario, quando existir.
 - `GET /api/admin/users`: lista dados completos usando token administrativo.
 - `PUT /api/admin/users/:userId`: altera nome, e-mail e foto usando token administrativo.
+- `DELETE /api/admin/users/:userId`: exclui um usuario usando token administrativo.
 - `GET /api/requests/current`: informa quem esta aguardando.
 - `GET /api/requests/history`: lista quem solicitou e quando, sem retornar codigos.
 - `POST /api/requests`: reserva a vez exclusiva por cinco minutos.

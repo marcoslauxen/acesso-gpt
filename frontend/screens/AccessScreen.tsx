@@ -8,6 +8,7 @@ import {
   ApiError,
   createCodeRequest,
   createUser,
+  deleteAdminUser,
   fetchAdminUsers,
   fetchCurrentRequest,
   fetchRequest,
@@ -198,6 +199,19 @@ function AccessScreen() {
         .map((item) => (item.id === user.id ? user : item))
         .sort((left, right) => left.name.localeCompare(right.name, "pt-BR"))
     );
+    showMessage("success", text);
+  }
+
+  function handleDeleted(userId: string, text: string) {
+    setUsers((current) => current.filter((user) => user.id !== userId));
+    setSelectedUserId((current) => (current === userId ? "" : current));
+
+    if (currentRequest?.userId === userId) {
+      setCurrentRequest(null);
+      localStorage.removeItem(APP_CONFIG.requestKey);
+      setOwnRequestId("");
+    }
+
     showMessage("success", text);
   }
 
@@ -449,6 +463,7 @@ function AccessScreen() {
         <ManageUsersModal
           onClose={() => setManageOpen(false)}
           onUpdated={handleUpdated}
+          onDeleted={handleDeleted}
         />
       )}
     </main>
@@ -682,9 +697,10 @@ function RegisterModal({ onClose, onRegistered }: RegisterModalProps) {
 interface ManageUsersModalProps {
   onClose: () => void;
   onUpdated: (user: AppUser, message: string) => void;
+  onDeleted: (userId: string, message: string) => void;
 }
 
-function ManageUsersModal({ onClose, onUpdated }: ManageUsersModalProps) {
+function ManageUsersModal({ onClose, onUpdated, onDeleted }: ManageUsersModalProps) {
   const [token, setToken] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -698,6 +714,8 @@ function ManageUsersModal({ onClose, onUpdated }: ManageUsersModalProps) {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const selectedUser = users.find((user) => user.id === selectedId) || null;
   const avatarPreview = removeAvatar ? "" : avatarDataUrl || selectedUser?.avatarUrl || "";
@@ -710,6 +728,7 @@ function ManageUsersModal({ onClose, onUpdated }: ManageUsersModalProps) {
     setRemoveAvatar(false);
     setError("");
     setMessage("");
+    setConfirmingDelete(false);
   }
 
   async function closeModal() {
@@ -785,13 +804,56 @@ function ManageUsersModal({ onClose, onUpdated }: ManageUsersModalProps) {
     }
   }
 
+  async function handleDelete() {
+    if (!selectedUser || !confirmingDelete) return;
+
+    const deletedUser = selectedUser;
+    setDeleting(true);
+    setError("");
+    setMessage("");
+
+    try {
+      const data = await deleteAdminUser(token, deletedUser.id);
+      const remainingUsers = users.filter((user) => user.id !== deletedUser.id);
+
+      setUsers(remainingUsers);
+      setConfirmingDelete(false);
+
+      if (remainingUsers[0]) {
+        selectUser(remainingUsers[0]);
+      } else {
+        setSelectedId("");
+        setName("");
+        setEmail("");
+        setAvatarDataUrl("");
+        setRemoveAvatar(false);
+      }
+
+      onDeleted(
+        data.deletedUserId,
+        data.message || `${deletedUser.name} foi excluido com sucesso.`
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Nao foi possivel excluir o usuario.");
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
-      if (event.key === "Escape") void closeModal();
+      if (event.key !== "Escape") return;
+
+      if (confirmingDelete && !deleting) {
+        setConfirmingDelete(false);
+        return;
+      }
+
+      if (!deleting) void closeModal();
     }
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [token]);
+  }, [token, confirmingDelete, deleting]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#082d27]/80 px-4 py-6 backdrop-blur-md" onClick={() => void closeModal()}>
@@ -829,6 +891,9 @@ function ManageUsersModal({ onClose, onUpdated }: ManageUsersModalProps) {
         ) : (
           <div className="mt-8 grid gap-5 md:grid-cols-[240px_1fr]">
             <div className="max-h-[58vh] space-y-2 overflow-y-auto rounded-[28px] bg-[#e9eee4] p-3">
+              {users.length === 0 && (
+                <p className="px-3 py-8 text-center text-sm font-bold leading-6 text-[#71867e]">Nenhum usuário cadastrado.</p>
+              )}
               {users.map((user) => (
                 <button key={user.id} type="button" className={`flex w-full items-center gap-3 rounded-2xl border p-3 text-left transition ${selectedId === user.id ? "border-[#153f36] bg-[#153f36] text-white shadow-md" : "border-transparent bg-white text-[#153f36] hover:border-[#9db276]"}`} onClick={() => selectUser(user)}>
                   <Avatar name={user.name} avatarUrl={user.avatarUrl} selected={selectedId === user.id} />
@@ -862,10 +927,69 @@ function ManageUsersModal({ onClose, onUpdated }: ManageUsersModalProps) {
                   <span className="text-sm font-extrabold text-[#31584d]">E-mail</span>
                   <input className="mt-2 w-full rounded-2xl border border-[#d5ded4] bg-[#f8f9f5] px-4 py-3.5 text-[#153f36] outline-none transition focus:border-[#8dae35] focus:bg-white focus:ring-4 focus:ring-[#b7f50d]/20" type="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
                 </label>
-                <button type="submit" disabled={loading} className="flex min-h-[54px] w-full items-center justify-center gap-3 rounded-full bg-[#b7f50d] px-6 py-4 font-extrabold text-[#153f36] transition hover:bg-[#c9ff30] disabled:bg-[#dce3d7] disabled:text-[#8b9b94]">
+                <button type="submit" disabled={loading || deleting} className="flex min-h-[54px] w-full items-center justify-center gap-3 rounded-full bg-[#b7f50d] px-6 py-4 font-extrabold text-[#153f36] transition hover:bg-[#c9ff30] disabled:bg-[#dce3d7] disabled:text-[#8b9b94]">
                   {loading && <Spinner className="h-5 w-5 border-[#153f36]" />}
                   {loading ? "Salvando..." : "Salvar alterações"}
                 </button>
+                <button
+                  type="button"
+                  disabled={loading || deleting}
+                  className="flex min-h-[52px] w-full items-center justify-center rounded-full border border-red-200 bg-red-50 px-6 py-3.5 font-extrabold text-red-700 transition hover:border-red-300 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+                  onClick={() => {
+                    setConfirmingDelete(true);
+                    setError("");
+                    setMessage("");
+                  }}
+                >
+                  Excluir usuário
+                </button>
+
+                {confirmingDelete && (
+                  <div
+                    className="fixed inset-0 z-[60] flex items-center justify-center bg-[#082d27]/60 px-4 py-6 backdrop-blur-sm"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      if (!deleting) setConfirmingDelete(false);
+                    }}
+                  >
+                    <div
+                      className="w-full max-w-md rounded-[28px] border border-[#dce4d8] bg-[#fdfefa] p-6 shadow-2xl shadow-black/30 sm:p-7"
+                      role="alertdialog"
+                      aria-modal="true"
+                      aria-labelledby="delete-user-title"
+                      aria-describedby="delete-user-description"
+                      onClick={(event) => event.stopPropagation()}
+                    >
+                      <div className="flex items-start gap-4">
+                        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#fff0ec] text-xl font-black text-[#b54235]" aria-hidden="true">!</span>
+                        <div>
+                          <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-[#b54235]">Excluir usuário</p>
+                          <p id="delete-user-title" className="mt-1.5 text-xl font-extrabold leading-7 text-[#153f36]">Tem certeza que deseja excluir {selectedUser.name}?</p>
+                        </div>
+                      </div>
+                      <p id="delete-user-description" className="mt-4 text-sm leading-6 text-[#62776f]">O usuário será removido das listas e uma solicitação em andamento será cancelada. O histórico anterior será preservado.</p>
+                      <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                        <button
+                          type="button"
+                          disabled={deleting}
+                          className="rounded-full border border-[#ccd7cc] bg-white px-5 py-3 text-sm font-extrabold text-[#31584d] transition hover:border-[#9db276] hover:bg-[#f3f6ed] disabled:opacity-50"
+                          onClick={() => setConfirmingDelete(false)}
+                        >
+                          Cancelar
+                        </button>
+                        <button
+                          type="button"
+                          disabled={deleting}
+                          className="flex min-h-[46px] items-center justify-center gap-2 rounded-full bg-[#b54235] px-5 py-3 text-sm font-extrabold text-white shadow-md shadow-[#b54235]/15 transition hover:bg-[#96362d] disabled:bg-[#d9aaa5] disabled:shadow-none"
+                          onClick={() => void handleDelete()}
+                        >
+                          {deleting && <Spinner className="h-4 w-4 border-white" />}
+                          {deleting ? "Excluindo..." : "Confirmar exclusão"}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </form>
             )}
           </div>

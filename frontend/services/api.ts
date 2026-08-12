@@ -171,6 +171,21 @@ export async function updateAdminUser(
   );
 }
 
+export async function deleteAdminUser(
+  token: string,
+  userId: string
+): Promise<{ deletedUserId: string; message?: string }> {
+  const response = await fetch(`/api/admin/users/${encodeURIComponent(userId)}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  return parseResponse<{ deletedUserId: string; message?: string }>(
+    response,
+    "Nao foi possivel excluir o usuario."
+  );
+}
+
 export async function createUser(input: CreateUserInput): Promise<{ user: AppUser; message?: string }> {
   const response = await fetch("/api/users", {
     method: "POST",

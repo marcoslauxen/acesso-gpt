@@ -1,4 +1,4 @@
-const { query } = require("../database");
+const { query, withTransaction } = require("../database");
 
 const MAX_AVATAR_BYTES = 400 * 1024;
 const ALLOWED_AVATAR_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
@@ -75,6 +75,7 @@ async function listAdminUsers() {
             END AS "avatarUrl",
             created_at AS "createdAt", updated_at AS "updatedAt"
      FROM app_users
+     WHERE active = TRUE
      ORDER BY name ASC`
   );
 
@@ -155,9 +156,37 @@ async function updateUser(userId, name, email, avatarAction) {
   return result.rows[0] || null;
 }
 
+async function deleteUser(userId) {
+  return withTransaction(async (client) => {
+    const result = await client.query(
+      `UPDATE app_users
+       SET active = FALSE, updated_at = NOW()
+       WHERE id = $1 AND active = TRUE
+       RETURNING id, name`,
+      [userId]
+    );
+
+    const user = result.rows[0] || null;
+
+    if (!user) {
+      return null;
+    }
+
+    await client.query(
+      `UPDATE code_requests
+       SET status = 'canceled', completed_at = COALESCE(completed_at, NOW())
+       WHERE user_id = $1 AND status IN ('waiting', 'processing')`,
+      [userId]
+    );
+
+    return user;
+  });
+}
+
 module.exports = {
   MAX_AVATAR_BYTES,
   createUser,
+  deleteUser,
   getUserAvatar,
   listActiveUsers,
   listAdminUsers,
